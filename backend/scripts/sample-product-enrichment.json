@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Laptop HP Gaming Victus 15",
+    "specs": {
+      "cpu": "Ryzen 5 7535HS",
+      "gpu": "RTX 2050",
+      "ram": "8GB",
+      "storage": "512GB SSD",
+      "screenSize": "15.6 inch 144Hz"
+    },
+    "useCases": ["gaming", "programming", "studying"],
+    "strengths": ["Strong GPU for light gaming and graphics work"],
+    "weaknesses": ["Heavier and less battery-friendly than office laptops"],
+    "bestFor": ["Students who want programming plus light gaming"],
+    "notBestFor": ["Users who need maximum portability"],
+    "reviewSummary": "Good performance value, but portability is not its strongest point.",
+    "tags": ["laptop", "gaming", "programming", "student"],
+    "rating": 4.4,
+    "reviewCount": 128
+  }
+]

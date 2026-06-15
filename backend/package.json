@@ -1,0 +1,28 @@
+{
+  "name": "4kay-store-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "nodemon --ignore \"*.log\" --ignore \"*.err.log\" server.js",
+    "enrich:products": "node scripts/enrichProducts.js",
+    "import:bestbuy": "node scripts/importBestBuyProducts.js",
+    "import:amazon": "node scripts/importAmazonProducts.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Express and MongoDB API for the 4Kay Electronics Store",
+  "dependencies": {
+    "@payos/node": "^2.0.5",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.3",
+    "nodemon": "^3.1.7",
+    "qrcode": "^1.5.4"
+  }
+}
