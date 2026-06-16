@@ -96,6 +96,59 @@ exports.updateCustomer = async (req, res) => {
   }
 };
 
+exports.adminCreateCustomer = async (req, res) => {
+  return exports.registerCustomer(req, res);
+};
+
+exports.adminUpdateCustomer = async (req, res) => {
+  const { name, email, phone, address, password } = req.body || {};
+
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer does not exist." });
+    }
+
+    if (name !== undefined) customer.name = String(name).trim();
+    if (email !== undefined) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const duplicate = await Customer.findOne({
+        email: normalizedEmail,
+        _id: { $ne: customer._id },
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: "Email is already registered." });
+      }
+      customer.email = normalizedEmail;
+    }
+    if (phone !== undefined) customer.phone = String(phone).trim();
+    if (address !== undefined) customer.address = String(address).trim();
+    if (password) customer.password = password;
+
+    await customer.save();
+    return res.status(200).json({
+      message: "Customer updated.",
+      customer: toPublicCustomer(customer),
+    });
+  } catch (error) {
+    console.error("Admin customer update failed:", error.message);
+    return res.status(400).json({ message: error.message || "Could not update customer." });
+  }
+};
+
+exports.adminDeleteCustomer = async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer does not exist." });
+    }
+    return res.status(200).json({ message: "Customer deleted." });
+  } catch (error) {
+    console.error("Admin customer deletion failed:", error.message);
+    return res.status(400).json({ message: "Could not delete customer." });
+  }
+};
+
 exports.getCustomerById = async (req, res) => {
   try {
     if (req.authRole !== "admin" && req.user.id.toString() !== req.params.id) {

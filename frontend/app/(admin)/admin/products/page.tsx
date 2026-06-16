@@ -20,7 +20,7 @@ const ProductsPage = () => {
   }
 
   return (
-    <div className="p-4 mt-2 w-3/4 max-md:w-full mx-auto">
+    <div className="mx-auto mt-2 w-full max-w-[1500px] p-5 sm:p-7">
       <ProductTable />
     </div>
   );

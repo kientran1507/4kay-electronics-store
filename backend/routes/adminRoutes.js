@@ -6,6 +6,8 @@ const {
   updateAdmin,
   getAdminById,
   getAllAdmins,
+  updateAdminById,
+  deleteAdmin,
 } = require("../controllers/adminController"); // Import controller
 const { protect, adminProtect } = require("../middleware/authMiddleware"); // Middleware bảo vệ route
 
@@ -19,6 +21,8 @@ router.post("/login", loginAdmin);
 
 // Cập nhật thông tin admin
 router.put("/update", adminProtect, updateAdmin);
+router.put("/:id", adminProtect, updateAdminById);
+router.delete("/:id", adminProtect, deleteAdmin);
 
 // Lấy thông tin admin
 router.get("/:id", adminProtect, getAdminById);

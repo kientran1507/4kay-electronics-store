@@ -1,37 +1,31 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ProductionQuantityLimitsIcon from "@mui/icons-material/ProductionQuantityLimits";
-import GradingIcon from "@mui/icons-material/Grading";
-import SettingsIcon from "@mui/icons-material/Settings";
 import { usePathname, useRouter } from "next/navigation";
-import GroupIcon from "@mui/icons-material/Group";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import { LayoutDashboard, Package, ReceiptText, ShieldCheck, Users } from "lucide-react";
 
 const routes = [
   {
     label: "Dashboard",
-    icon: <DashboardIcon className="h-4 w-4 mr-2" />,
+    icon: LayoutDashboard,
     href: `/admin`,
   },
   {
     label: "Orders",
-    icon: <GradingIcon className="h-4 w-4 mr-2" />,
+    icon: ReceiptText,
     href: `/admin/orders`,
   },
   {
     label: "Products",
-    icon: <ProductionQuantityLimitsIcon className="h-4 w-4 mr-2" />,
+    icon: Package,
     href: `/admin/products`,
   },
   {
-    label: "Manage Users",
-    icon: <GroupIcon className="h-4 w-4 mr-2" />,
+    label: "Customers",
+    icon: Users,
     href: `/admin/users`,
   },
   {
-    label: "Manage Admins",
-    icon: <AdminPanelSettingsIcon className="h-4 w-4 mr-2" />,
+    label: "Administrators",
+    icon: ShieldCheck,
     href: `/admin/admins`,
   },
 ];
@@ -45,23 +39,25 @@ const NavItem = () => {
   };
 
   return (
-    <div className="flex flex-col flex-start">
-      {routes.map((route) => (
-        <Button
+    <div className="flex flex-col gap-1">
+      {routes.map((route) => {
+        const Icon = route.icon;
+        const active = pathname === route.href || (route.href !== "/admin" && pathname.startsWith(route.href));
+        return (
+        <button
           onClick={() => onClickHandler(route.href)}
           key={route.href}
-          size="sm"
-          variant="ghost"
-          className={`w-full text-white font-normal justify-start ${
-            (pathname === route.href ||
-              pathname.startsWith(`${route.href}/new`)) &&
-            "bg-slate-600 text-sky-300"
+          className={`relative flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition ${
+            active
+              ? "bg-emerald-50 text-emerald-800"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
           }`}
         >
-          {route.icon}
+          {active && <span className="absolute -left-4 h-6 w-1 rounded-r-full bg-emerald-600" />}
+          <Icon className="h-[18px] w-[18px]" />
           {route.label}
-        </Button>
-      ))}
+        </button>
+      )})}
     </div>
   );
 };

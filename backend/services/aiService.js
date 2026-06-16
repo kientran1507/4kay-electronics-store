@@ -27,8 +27,19 @@ const getCasualResponse = (message) => {
   if (/^(bye|goodbye|see you|see you later)[!.?\s]*$/.test(text)) {
     return "Goodbye! Come back anytime you need help.";
   }
+  if (/\b(who are you|what are you|your name)\b/.test(text)) {
+    return "I am the 4Kay AI shopping assistant. I can explain products, help you choose, compare options, and answer questions about orders, delivery, returns, payments, and the store.";
+  }
+  if (/\b(what can you do|how can you help|help me with)\b/.test(text)) {
+    return "I can recommend and compare electronics, explain specifications in simple language, help with product details, and guide you through cart, payment, delivery, returns, and warranty questions.";
+  }
 
   return null;
+};
+
+const getDefaultGeneralResponse = (message) => {
+  const compact = String(message || "").trim();
+  return `I am not fully sure what you mean by "${compact.slice(0, 80)}". I can still help: ask about a product, choosing a device, comparing models, an order, payment, delivery, returns, or warranty.`;
 };
 
 const parseJson = (raw) => {
@@ -128,6 +139,70 @@ const parseWithLLM = async (message, context) => {
     console.warn("LLM preference parsing failed, using local parser:", error.message);
     return null;
   }
+};
+
+const generateGeneralResponse = async (message, context) => {
+  const prompt = [
+    "You are the 4Kay electronics store assistant.",
+    "Answer the user's message naturally and concisely.",
+    "Stay within electronics shopping and store support. If the request is unrelated, say so politely and offer relevant help.",
+    "Do not invent prices, stock, order status, policies, or product facts.",
+    "Never force the conversation into product recommendation questions unless the user is actually asking to choose a product.",
+    JSON.stringify({ message, recentConversation: context?.messages?.slice(-6) || [] }),
+  ].join("\n");
+
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const response = await fetch(getGeminiApiUrl(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": process.env.GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.35, maxOutputTokens: 220 },
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (reply) return reply;
+      }
+    } catch (error) {
+      console.warn("Gemini general response failed:", error.message);
+    }
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+          temperature: 0.35,
+          max_tokens: 220,
+          messages: [
+            { role: "system", content: prompt },
+            { role: "user", content: message },
+          ],
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content?.trim();
+        if (reply) return reply;
+      }
+    } catch (error) {
+      console.warn("OpenAI general response failed:", error.message);
+    }
+  }
+
+  return getDefaultGeneralResponse(message);
 };
 
 const formatCurrency = (amount) =>
@@ -281,12 +356,23 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
 
   const localNeeds = extractPreferences(message);
   const llmNeeds = await parseWithLLM(message, context);
-  const localIntent = detectIntent(message);
-  const intent = localIntent === "guided_discovery" || llmNeeds?.intent === "guided_discovery"
-    ? "guided_discovery"
-    : localIntent !== "general"
-      ? localIntent
-      : llmNeeds?.intent || localIntent;
+  const detectedIntent = detectIntent(message);
+  const hasShoppingSignals = Boolean(
+    localNeeds.category
+    || localNeeds.budget
+    || localNeeds.useCases?.length
+    || localNeeds.importantFactors?.length
+    || localNeeds.preferredBrands?.length
+    || Object.keys(localNeeds.specs || {}).length,
+  );
+  const localIntent = detectedIntent === "general" && hasShoppingSignals
+    ? "recommend"
+    : detectedIntent;
+  const intent = localIntent !== "general"
+    ? localIntent
+    : hasShoppingSignals
+      ? llmNeeds?.intent || "recommend"
+      : "general";
   const needs = mergeNeeds(previousPreferences, localNeeds, llmNeeds || {});
   const canSuggestBudget = Boolean(
     (previousPreferences?.category || previousPreferences?.deviceType) &&
@@ -299,6 +385,37 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
   const guidedDiscoveryRequested = intent === "guided_discovery";
   const guidedDiscoveryActive = guidedDiscoveryRequested || Boolean(previousPreferences?.guidedDiscoveryActive);
   const recommendationReady = hasCompleteRecommendationNeeds(publicNeeds);
+
+  if (intent === "general") {
+    return {
+      reply: await generateGeneralResponse(message, context),
+      intent: "general",
+      needs: publicNeeds,
+      preferences: needs,
+      recommendedProducts: [],
+      alternatives: [],
+      followUpQuestion: "",
+      avatarState: "talking",
+      actions: [],
+    };
+  }
+
+  if (intent === "product_detail" || intent === "add_to_cart") {
+    const followUpQuestion = intent === "product_detail"
+      ? "Which product would you like details about? Send its name and I will explain the important parts."
+      : "Which product would you like to add? Send its name, or open a recommendation card and choose Add to cart.";
+    return {
+      reply: followUpQuestion,
+      intent: "ask_follow_up",
+      needs: publicNeeds,
+      preferences: needs,
+      recommendedProducts: [],
+      alternatives: [],
+      followUpQuestion,
+      avatarState: "talking",
+      actions: [],
+    };
+  }
 
   if ((guidedDiscoveryActive && !recommendationReady) || needsFollowUp(publicNeeds, intent)) {
     needs.guidedDiscoveryActive = true;

@@ -312,7 +312,7 @@ export const createProtectedApi = (token: string) => {
       },
 
       updateAdmin: async (data: any) => {
-        const res = await api.put('/admins/update', data);
+        const res = await api.put(`/admins/${data._id}`, data);
         return res.data;
       },
 
@@ -360,7 +360,7 @@ export const createProtectedApi = (token: string) => {
       },
 
       createCustomer: async (customerData: any) => {
-        const res = await api.post('/customers/register', customerData);
+        const res = await api.post('/customers/admin', customerData);
         return res.data;
       }
     }

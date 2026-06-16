@@ -169,7 +169,7 @@ const AIAssistant = () => {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
       {open && (
-        <div className="flex w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-2xl border border-[#eadcc8] bg-white shadow-2xl">
+        <div className="flex w-[min(420px,calc(100dvw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#eadcc8] bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-3">
               <span className="relative h-12 w-12 overflow-hidden rounded-full border border-[#eadcc8] bg-[#fff4e6]"><Image src="/images/ai-assistant-portrait.png" alt="4Kay AI assistant" fill className="object-cover" sizes="48px" /></span>

@@ -68,8 +68,14 @@ export default function CheckoutModal({ isOpen, onClose, totalPrice }: CheckoutM
       }
 
       const session = await api.payments.create(orderResponse.order._id);
+      if (session.provider === "payos" && session.paymentUrl) {
+        toast.success("Redirecting to secure PayOS checkout...");
+        window.location.assign(session.paymentUrl);
+        return;
+      }
+
       setPayment(session);
-      toast.success(session.provider === "payos" ? "Secure payment is ready." : "Bank transfer instructions are ready.");
+      toast.success("Bank transfer instructions are ready.");
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error?.response?.data?.message || "Failed to place order");

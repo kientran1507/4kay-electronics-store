@@ -93,6 +93,58 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
+exports.updateAdminById = async (req, res) => {
+  const { name, email, phone, password } = req.body || {};
+
+  try {
+    const admin = await Admin.findById(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin does not exist." });
+    }
+
+    if (name !== undefined) admin.name = String(name).trim();
+    if (email !== undefined) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const duplicate = await Admin.findOne({
+        email: normalizedEmail,
+        _id: { $ne: admin._id },
+      });
+      if (duplicate) {
+        return res.status(400).json({ message: "Email is already registered." });
+      }
+      admin.email = normalizedEmail;
+    }
+    if (phone !== undefined) admin.phone = String(phone).trim();
+    if (password) admin.password = password;
+
+    await admin.save();
+    return res.status(200).json({
+      message: "Admin updated.",
+      admin: toPublicAdmin(admin),
+    });
+  } catch (error) {
+    console.error("Admin account update failed:", error.message);
+    return res.status(400).json({ message: error.message || "Could not update admin." });
+  }
+};
+
+exports.deleteAdmin = async (req, res) => {
+  if (String(req.user.id) === String(req.params.id)) {
+    return res.status(400).json({ message: "You cannot delete the account you are using." });
+  }
+
+  try {
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin does not exist." });
+    }
+    return res.status(200).json({ message: "Admin deleted." });
+  } catch (error) {
+    console.error("Admin deletion failed:", error.message);
+    return res.status(400).json({ message: "Could not delete admin." });
+  }
+};
+
 exports.getAdminById = async (req, res) => {
   try {
     const admin = await Admin.findById(req.params.id).select("-password");

@@ -35,16 +35,15 @@ const MobileSidebar = ({ children }: { children: React.ReactNode }) => {
     <>
       <Button
         onClick={onOpen}
-        className="block md:hidden mr-2"
-        variant="default"
-        size="sm"
-      >
+        className="mr-1 flex h-10 w-10 p-0 lg:hidden"
+        variant="outline"
+        >
         <Menu className="h-5 w-5" />
       </Button>
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent
           side="left"
-          className="p-2 pt-10 bg-neutral-800 text-white"
+          className="w-64 border-slate-200 bg-white p-0 pt-[72px]"
         >
           {children}
         </SheetContent>

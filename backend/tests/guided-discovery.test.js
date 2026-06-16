@@ -53,6 +53,32 @@ test("casual responses preserve existing conversation preferences", async () => 
   assert.deepEqual(response.needs.useCases, ["programming"]);
 });
 
+test("identity questions stay conversational instead of starting discovery", async () => {
+  const response = await buildAssistantResponse({
+    message: "who are you",
+    context: {},
+    previousPreferences: {},
+  });
+
+  assert.equal(response.intent, "general");
+  assert.deepEqual(response.recommendedProducts, []);
+  assert.equal(response.followUpQuestion, "");
+  assert.match(response.reply, /4Kay AI shopping assistant/i);
+});
+
+test("unknown general messages use a useful default without provider keys", async () => {
+  const response = await withoutProviderKeys(() => buildAssistantResponse({
+    message: "tell me about quantum gardening",
+    context: {},
+    previousPreferences: {},
+  }));
+
+  assert.equal(response.intent, "general");
+  assert.deepEqual(response.recommendedProducts, []);
+  assert.match(response.reply, /I can still help/i);
+  assert.doesNotMatch(response.reply, /what type of device/i);
+});
+
 test("guided discovery asks one question at a time without products", async () => {
   const response = await withoutProviderKeys(() => buildAssistantResponse({
     message: "ask me some question and find out which device is best for me",

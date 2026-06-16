@@ -13,13 +13,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="h-full">
+    <div className="h-screen overflow-hidden bg-slate-50 text-slate-950">
       <Navbar />
-      <main className="pt-14 flex h-full gap-x-7">
-        <div className="w-64 shrink-0 hidden md:block">
+      <main className="flex h-screen min-w-0 overflow-hidden pt-[72px]">
+        <div className="hidden w-64 shrink-0 lg:block">
           <Sidebar />
         </div>
-        {children}
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarGutter: "stable" }}>{children}</div>
       </main>
     </div>
   );

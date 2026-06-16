@@ -2,7 +2,7 @@ import TableOrders from "./_components/table-orders";
 
 const OrdersPage = () => {
   return (
-    <div className="p-4 mt-2 w-3/4 max-md:w-full mx-auto">
+    <div className="mx-auto w-full max-w-[1500px] p-4 sm:p-7">
       <TableOrders />
     </div>
   );

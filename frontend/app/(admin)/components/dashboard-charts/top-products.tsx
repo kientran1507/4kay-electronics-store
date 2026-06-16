@@ -1,36 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { EmptyState } from "../admin-ui";
+import ChartCard from "./chart-card";
 
-interface TopProductsProps {
-  data: Array<{ name: string; quantity: number; }>;
+export default function TopProducts({ data }: { data: Array<{ name: string; quantity: number }> }) {
+  const maximum = Math.max(...data.map((item) => item.quantity), 1);
+  return <ChartCard title="Top selling products" subtitle="Products ranked by units sold">{data.length ? <div className="space-y-5 py-2">{data.map((product, index) => <div key={product.name}><div className="mb-2 flex items-center justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600">{index + 1}</span><p className="truncate text-sm font-semibold text-slate-800">{product.name}</p></div><span className="text-sm font-bold text-slate-950">{product.quantity}</span></div><div className="ml-10 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(8, (product.quantity / maximum) * 100)}%` }} /></div></div>)}</div> : <EmptyState title="No product sales yet" description="Product rankings appear after completed orders." />}</ChartCard>;
 }
-
-const TopProducts = ({ data }: TopProductsProps) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top Selling Products</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                width={150}
-                tick={{ fontSize: 12 }}
-              />
-              <Tooltip />
-              <Bar dataKey="quantity" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default TopProducts;

@@ -1,5 +1,5 @@
-const DashboardPage = () => {
-  return <div className="pt-4">DashboardPage</div>;
-};
+import { redirect } from "next/navigation";
 
-export default DashboardPage;
+export default function DashboardPage() {
+  redirect("/admin");
+}
