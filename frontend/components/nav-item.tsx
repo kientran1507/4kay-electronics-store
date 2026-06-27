@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/utils/authContext";
+import { useLocale } from "@/hooks/use-locale";
 
 interface Route {
   label: string;
@@ -13,25 +14,27 @@ interface Route {
 const NavItem = () => { 
   const pathname = usePathname();
   const { user } = useAuth();
+  const { locale } = useLocale();
+  const vi = locale === "vi";
 
   const routes: Route[] = [
     {
-      label: "Shop",
+      label: vi ? "Cửa hàng" : "Shop",
       href: "/shop",
       role: "all"
     },
     {
-      label: "Categories",
+      label: vi ? "Danh mục" : "Categories",
       href: "/categories",
       role: "all"
     },
     {
-      label: "Guides",
+      label: vi ? "Hướng dẫn" : "Guides",
       href: "/guides",
       role: "all"
     },
     {
-      label: "Support",
+      label: vi ? "Hỗ trợ" : "Support",
       href: "/support",
       role: "all"
     }

@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useCart from "@/hooks/use-cart";
 import { useAuth } from "@/app/utils/authContext";
+import { useLocale } from "@/hooks/use-locale";
 
 const NavbarActions = () => {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const cart = useCart();
   const { user } = useAuth();
+  const { locale } = useLocale();
 
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
@@ -22,7 +24,7 @@ const NavbarActions = () => {
       type="button"
       onClick={() => router.push(user ? "/cart" : "/customer-sign-in")}
       className="relative flex h-9 w-9 items-center justify-center rounded-md hover:bg-[#f7efe4]"
-      title="Shopping cart"
+      title={locale === "vi" ? "Giỏ hàng" : "Shopping cart"}
     >
       <ShoppingCart className="h-[18px] w-[18px]" />
       {totalItems > 0 && (

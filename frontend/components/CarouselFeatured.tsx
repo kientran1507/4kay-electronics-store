@@ -10,14 +10,16 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import ProductCard from "./ui/product-card";
+import { useLocale } from "@/hooks/use-locale";
 
 type CarouselFeaturedProps = {
   data: Product[];
 };
 
 const CarouselFeatured = ({ data }: CarouselFeaturedProps) => {
+  const { locale } = useLocale();
   if (!data || data.length === 0) {
-    return <div>No products available</div>;
+    return <div>{locale === "vi" ? "Chưa có sản phẩm." : "No products available."}</div>;
   }
 
   return (

@@ -5,19 +5,24 @@ export interface Product {
   price: number;
   stock: number;
   image: string;
+  images?: string[];
   category: string;
+  brand?: string;
+  descriptionVi?: string;
   specs?: Record<string, string>;
   useCases?: string[];
-  strengths?: string[];
-  weaknesses?: string[];
-  bestFor?: string[];
-  notBestFor?: string[];
-  reviewSummary?: string;
-  tags?: string[];
+  highlights?: LocalizedList;
+  tradeoffs?: LocalizedList;
   rating?: number | null;
   reviewCount?: number;
+  warranty?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface LocalizedList {
+  en?: string[];
+  vi?: string[];
 }
 
 export interface OrderItem {
@@ -35,6 +40,12 @@ export interface Order {
   _id: string;
   userId: string;
   items: OrderItem[];
+  subtotal?: number;
+  discountAmount?: number;
+  voucherCode?: string;
+  shippingFee?: number;
+  shippingZone?: string;
+  shippingLabel?: string;
   totalPrice: number;
   status: 'Chờ thanh toán' | 'Chờ xử lý' | 'Đang giao' | 'Hoàn thành' | 'Đã hủy';
   shippingAddress: string;
@@ -97,17 +108,15 @@ export interface RequestData {
   price: number;
   image: string;
   category: string;
+  descriptionVi?: string;
   stock?: number;
   specs?: Record<string, string>;
   useCases?: string[];
-  strengths?: string[];
-  weaknesses?: string[];
-  bestFor?: string[];
-  notBestFor?: string[];
-  reviewSummary?: string;
-  tags?: string[];
+  highlights?: LocalizedList;
+  tradeoffs?: LocalizedList;
   rating?: number | null;
   reviewCount?: number;
+  warranty?: string;
 }
 
 export interface AuthUser {
@@ -154,6 +163,18 @@ export interface PaymentSchema {
   paymentMethod: 'Tiền mặt' | 'Chuyển khoản';
   shippingAddress: string;
   paymentAccount?: string;
+  voucherCode?: string;
+}
+
+export interface PricingQuote {
+  subtotal: number;
+  discountAmount: number;
+  voucherCode: string;
+  shippingFee: number;
+  shippingZone: string;
+  shippingLabel: string;
+  freeShippingMin: number;
+  totalPrice: number;
 }
 
 export interface PaymentSession {
@@ -227,6 +248,7 @@ export interface AssistantRequest {
   message: string;
   conversationId?: string;
   userId?: string;
+  locale?: 'en' | 'vi';
   context?: Record<string, unknown>;
 }
 
@@ -260,6 +282,7 @@ export interface KioskRequest {
   message: string;
   conversationId?: string;
   userId?: string;
+  locale?: 'en' | 'vi';
   selectedProductIds?: string[];
   context?: Record<string, unknown>;
 }

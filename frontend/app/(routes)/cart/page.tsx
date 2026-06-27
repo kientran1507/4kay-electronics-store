@@ -9,12 +9,15 @@ import Footer from "@/components/footer";
 import useCart from "@/hooks/use-cart";
 import CartItem from "./_components/cart-item";
 import Summary from "./_components/summary";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const cart = useCart();
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+  const { locale } = useLocale();
+  const vi = locale === "vi";
 
   useEffect(() => setIsMounted(true), []);
 
@@ -35,16 +38,16 @@ export default function CartPage() {
           <div>
             <Link href="/shop" className="inline-flex items-center gap-2 text-sm font-medium text-[#6b7280] hover:text-[#c87916]">
               <ArrowLeft className="h-4 w-4" />
-              Continue shopping
+              {vi ? "Tiếp tục mua sắm" : "Continue shopping"}
             </Link>
-            <h1 className="mt-4 text-3xl font-bold sm:text-4xl">Your shopping cart</h1>
+            <h1 className="mt-4 text-3xl font-bold sm:text-4xl">{vi ? "Giỏ hàng của bạn" : "Your shopping cart"}</h1>
             <p className="mt-2 text-sm text-[#6b7280]">
-              {items.length} {items.length === 1 ? "item" : "items"} ready for checkout
+              {vi ? `${items.length} sản phẩm sẵn sàng thanh toán` : `${items.length} ${items.length === 1 ? "item" : "items"} ready for checkout`}
             </p>
           </div>
           <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#eadcc8] bg-white px-3 py-2 text-xs font-medium text-[#59606b]">
             <LockKeyhole className="h-4 w-4 text-[#c87916]" />
-            Secure checkout
+            {vi ? "Thanh toán bảo mật" : "Secure checkout"}
           </div>
         </div>
 
@@ -53,19 +56,19 @@ export default function CartPage() {
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#fff4e6] text-[#c87916]">
               <ShoppingBag className="h-9 w-9" />
             </span>
-            <h2 className="mt-5 text-2xl font-bold">Your cart is empty</h2>
+            <h2 className="mt-5 text-2xl font-bold">{vi ? "Giỏ hàng đang trống" : "Your cart is empty"}</h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-[#6b7280]">
-              Browse the catalog or ask the AI assistant to find a device that fits your budget.
+              {vi ? "Hãy xem danh mục hoặc nhờ trợ lý AI tìm thiết bị phù hợp với ngân sách của bạn." : "Browse the catalog or ask the AI assistant to find a device that fits your budget."}
             </p>
             <Link href="/shop" className="mt-6 rounded-lg bg-[#c87916] px-5 py-3 text-sm font-semibold text-white hover:bg-[#a9600f]">
-              Browse products
+              {vi ? "Xem sản phẩm" : "Browse products"}
             </Link>
           </section>
         ) : (
           <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
             <section className="overflow-hidden rounded-xl border border-[#eadcc8] bg-white">
               <div className="border-b border-[#eadcc8] px-5 py-4">
-                <h2 className="font-semibold">Items in your cart</h2>
+                <h2 className="font-semibold">{vi ? "Sản phẩm trong giỏ" : "Items in your cart"}</h2>
               </div>
               <ul className="divide-y divide-[#eadcc8]">
                 {items.map((item) => (

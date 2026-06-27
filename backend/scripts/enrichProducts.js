@@ -96,12 +96,15 @@ const loadRows = (filePath) => {
 const mapRowToProductUpdate = (row) => ({
   specs: parseSpecs(row),
   useCases: splitList(row.useCases || row.use_cases),
-  strengths: splitList(row.strengths),
-  weaknesses: splitList(row.weaknesses),
-  bestFor: splitList(row.bestFor || row.best_for),
-  notBestFor: splitList(row.notBestFor || row.not_best_for),
-  reviewSummary: row.reviewSummary || row.review_summary,
-  tags: splitList(row.tags),
+  descriptionVi: row.descriptionVi || row.description_vi,
+  highlights: {
+    en: splitList(row.highlightsEn || row.highlights_en || row.strengths),
+    vi: splitList(row.highlightsVi || row.highlights_vi),
+  },
+  tradeoffs: {
+    en: splitList(row.tradeoffsEn || row.tradeoffs_en || row.weaknesses),
+    vi: splitList(row.tradeoffsVi || row.tradeoffs_vi),
+  },
   rating: parseScalar(row.rating),
   reviewCount: parseScalar(row.reviewCount || row.review_count),
 });

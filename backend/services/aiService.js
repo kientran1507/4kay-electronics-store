@@ -211,9 +211,17 @@ const formatCurrency = (amount) =>
     currency: "VND",
   }).format(amount);
 
+const firstValidBudget = (...values) => {
+  for (const value of values) {
+    const amount = Number(value);
+    if (Number.isFinite(amount) && amount > 0) return amount;
+  }
+  return null;
+};
+
 const mergeNeeds = (previousNeeds = {}, localNeeds = {}, llmNeeds = {}) => {
   const category = llmNeeds.category || localNeeds.category || previousNeeds.category || previousNeeds.deviceType || "";
-  const budget = llmNeeds.budget || localNeeds.budget || previousNeeds.budget || null;
+  const budget = firstValidBudget(llmNeeds.budget, localNeeds.budget, previousNeeds.budget);
   const preferredBrands = [
     ...(previousNeeds.preferredBrands || (previousNeeds.brand ? [previousNeeds.brand] : [])),
     ...(localNeeds.preferredBrands || []),
@@ -269,6 +277,22 @@ const getFollowUpQuestion = (needs) => {
   return "";
 };
 
+const getLocalizedFollowUpQuestion = (needs, locale = "en") => {
+  if (locale !== "vi") return getFollowUpQuestion(needs);
+
+  const missing = getMissingRecommendationFields(needs);
+  if (missing.includes("category")) {
+    return "Bạn đang muốn mua loại thiết bị nào: laptop, điện thoại, máy tính bảng hay phụ kiện?";
+  }
+  if (missing.includes("budget")) {
+    return "Ngân sách tối đa của bạn khoảng bao nhiêu? Chỉ cần nói con số ước lượng là được.";
+  }
+  if (missing.includes("useCases")) {
+    return "Bạn dùng thiết bị chủ yếu để học, làm việc, chơi game, lập trình, chụp ảnh hay giải trí?";
+  }
+  return "";
+};
+
 const wantsAssistantToChoose = (message) =>
   /\b(i (?:do not|don't|dont) know|not sure|you choose|choose for me|up to you|can you tell me|whatever you recommend|any budget)\b/i
     .test(String(message || ""));
@@ -286,9 +310,11 @@ const getSuggestedBudget = (needs = {}) => {
 
 const productName = (item) => item.product?.name || item.name;
 
-const buildRecommendationReply = (recommendedProducts, alternatives, needs) => {
+const buildRecommendationReply = (recommendedProducts, alternatives, needs, locale = "en") => {
   if (!recommendedProducts.length) {
-    return "I could not find a strong match in the current catalog. If you can raise the budget or relax the brand/category, I can try again.";
+    return locale === "vi"
+      ? "Tôi chưa tìm được lựa chọn thật sự phù hợp trong danh mục hiện tại. Nếu bạn có thể tăng ngân sách hoặc nới yêu cầu thương hiệu/nhóm hàng, tôi sẽ thử lại."
+      : "I could not find a strong match in the current catalog. If you can raise the budget or relax the brand/category, I can try again.";
   }
 
   const contextParts = [];
@@ -300,30 +326,43 @@ const buildRecommendationReply = (recommendedProducts, alternatives, needs) => {
   const second = recommendedProducts[1];
   const alternative = alternatives[0];
 
-  let reply = `For ${contextParts.join(", ") || "your needs"}, I would start with ${productName(top)}. ${top.reason} The trade-off: ${top.tradeoff}`;
+  let reply = locale === "vi"
+    ? `Với nhu cầu ${contextParts.join(", ") || "của bạn"}, tôi sẽ bắt đầu với ${productName(top)}. ${top.reason} Điểm đánh đổi: ${top.tradeoff}`
+    : `For ${contextParts.join(", ") || "your needs"}, I would start with ${productName(top)}. ${top.reason} The trade-off: ${top.tradeoff}`;
 
   if (second) {
-    reply += `\n\nIf you want another angle, ${productName(second)} is also worth considering. ${second.betterThan}`;
+    reply += locale === "vi"
+      ? `\n\nNếu muốn một hướng khác, ${productName(second)} cũng đáng cân nhắc. ${second.betterThan}`
+      : `\n\nIf you want another angle, ${productName(second)} is also worth considering. ${second.betterThan}`;
   }
 
   if (alternative) {
-    reply += `\n\nA reasonable alternative is ${alternative.product.name}: ${alternative.reason}`;
+    reply += locale === "vi"
+      ? `\n\nMột lựa chọn thay thế hợp lý là ${alternative.product.name}: ${alternative.reason}`
+      : `\n\nA reasonable alternative is ${alternative.product.name}: ${alternative.reason}`;
   }
 
-  reply += "\n\nTell me which one you like and I can compare it more directly or help you add it to cart.";
+  reply += locale === "vi"
+    ? "\n\nBạn thích mẫu nào thì nói tôi biết, tôi có thể so sánh trực tiếp hơn hoặc hỗ trợ thêm vào giỏ hàng."
+    : "\n\nTell me which one you like and I can compare it more directly or help you add it to cart.";
   return reply;
 };
 
-const buildCompareReply = (recommendedProducts) => {
+const buildCompareReply = (recommendedProducts, locale = "en") => {
   if (recommendedProducts.length < 2) {
-    return "I can compare products, but I need at least two model names. Which two products should I compare?";
+    return locale === "vi"
+      ? "Tôi có thể so sánh sản phẩm, nhưng cần ít nhất hai tên model. Bạn muốn so sánh hai sản phẩm nào?"
+      : "I can compare products, but I need at least two model names. Which two products should I compare?";
   }
 
   const [first, second] = recommendedProducts;
-  return `${first.product.name} is the better first pick if your priority is ${first.bestFor.toLowerCase()}. ${second.product.name} may be better if you prefer its price, brand, or design. Trade-offs matter here: ${first.product.name}: ${first.tradeoff} ${second.product.name}: ${second.tradeoff}`;
+  return locale === "vi"
+    ? `${first.product.name} là lựa chọn đầu tiên tốt hơn nếu ưu tiên của bạn là ${first.bestFor.toLowerCase()}. ${second.product.name} có thể hợp hơn nếu bạn thích giá, thương hiệu hoặc thiết kế của nó. Điểm đánh đổi: ${first.product.name}: ${first.tradeoff} ${second.product.name}: ${second.tradeoff}`
+    : `${first.product.name} is the better first pick if your priority is ${first.bestFor.toLowerCase()}. ${second.product.name} may be better if you prefer its price, brand, or design. Trade-offs matter here: ${first.product.name}: ${first.tradeoff} ${second.product.name}: ${second.tradeoff}`;
 };
 
 const buildAssistantResponse = async ({ message, context, previousPreferences }) => {
+  const locale = context?.locale === "vi" ? "vi" : "en";
   const supportAnswer = getSupportAnswer(message, context);
   if (supportAnswer) {
     return {
@@ -402,8 +441,12 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
 
   if (intent === "product_detail" || intent === "add_to_cart") {
     const followUpQuestion = intent === "product_detail"
-      ? "Which product would you like details about? Send its name and I will explain the important parts."
-      : "Which product would you like to add? Send its name, or open a recommendation card and choose Add to cart.";
+      ? locale === "vi"
+        ? "Bạn muốn xem chi tiết sản phẩm nào? Gửi tên sản phẩm, tôi sẽ giải thích phần quan trọng."
+        : "Which product would you like details about? Send its name and I will explain the important parts."
+      : locale === "vi"
+        ? "Bạn muốn thêm sản phẩm nào? Gửi tên sản phẩm hoặc bấm Thêm trên thẻ gợi ý."
+        : "Which product would you like to add? Send its name, or open a recommendation card and choose Add to cart.";
     return {
       reply: followUpQuestion,
       intent: "ask_follow_up",
@@ -419,7 +462,7 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
 
   if ((guidedDiscoveryActive && !recommendationReady) || needsFollowUp(publicNeeds, intent)) {
     needs.guidedDiscoveryActive = true;
-    const followUpQuestion = getFollowUpQuestion(publicNeeds);
+    const followUpQuestion = getLocalizedFollowUpQuestion(publicNeeds, locale);
     return {
       reply: followUpQuestion,
       intent: guidedDiscoveryActive ? "guided_discovery" : "ask_follow_up",
@@ -436,10 +479,12 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
   needs.guidedDiscoveryActive = false;
 
   if (intent === "compare") {
-    const { recommendedProducts, alternatives } = await compareProducts(message);
-    const followUpQuestion = recommendedProducts.length < 2 ? "Which two products should I compare?" : "";
+    const { recommendedProducts, alternatives } = await compareProducts(message, 4, locale);
+    const followUpQuestion = recommendedProducts.length < 2
+      ? locale === "vi" ? "Bạn muốn so sánh hai sản phẩm nào?" : "Which two products should I compare?"
+      : "";
     return {
-      reply: buildCompareReply(recommendedProducts),
+      reply: buildCompareReply(recommendedProducts, locale),
       intent: recommendedProducts.length < 2 ? "ask_follow_up" : "compare",
       needs: publicNeeds,
       preferences: needs,
@@ -455,10 +500,10 @@ const buildAssistantResponse = async ({ message, context, previousPreferences })
     };
   }
 
-  const { recommendedProducts, alternatives } = await recommendProducts(publicNeeds);
+  const { recommendedProducts, alternatives } = await recommendProducts(publicNeeds, 5, locale);
 
   return {
-    reply: buildRecommendationReply(recommendedProducts, alternatives, publicNeeds),
+    reply: buildRecommendationReply(recommendedProducts, alternatives, publicNeeds, locale),
     intent: "recommend",
     needs: publicNeeds,
     preferences: needs,

@@ -15,6 +15,7 @@ const findProductsForComparison = async ({ message = "", selectedProductIds = []
     $or: pieces.flatMap((piece) => [
       { name: { $regex: piece, $options: "i" } },
       { description: { $regex: piece, $options: "i" } },
+      { descriptionVi: { $regex: piece, $options: "i" } },
     ]),
   }).limit(4);
 };
@@ -26,9 +27,9 @@ const compareProducts = async ({ message, selectedProductIds, needs }) => {
     return {
       product: productPayload(product),
       scoreDetails: ranking.scoreDetails,
-      strengths: product.strengths || [],
-      weaknesses: product.weaknesses || [],
-      bestFor: product.bestFor || [],
+      strengths: product.highlights?.en || [],
+      weaknesses: product.tradeoffs?.en || [],
+      bestFor: product.useCases || [],
     };
   });
 

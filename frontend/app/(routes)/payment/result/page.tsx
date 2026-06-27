@@ -8,6 +8,7 @@ import { useAuth } from "@/app/utils/authContext";
 import Footer from "@/components/footer";
 import { createProtectedApi } from "@/lib/apiCalls";
 import { PaymentSession } from "@/types";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function PaymentResultPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,8 @@ export default function PaymentResultPage() {
   const orderId = searchParams.get("orderId");
   const result = searchParams.get("result");
   const [payment, setPayment] = useState<PaymentSession | null>(null);
+  const { locale } = useLocale();
+  const vi = locale === "vi";
 
   useEffect(() => {
     if (!user?.token || !orderId) return;
@@ -33,18 +36,18 @@ export default function PaymentResultPage() {
             <Icon className="h-10 w-10" />
           </span>
           <h1 className="mt-6 text-3xl font-bold">
-            {paid ? "Payment confirmed" : cancelled ? "Payment was cancelled" : "Payment is being confirmed"}
+            {paid ? (vi ? "Đã xác nhận thanh toán" : "Payment confirmed") : cancelled ? (vi ? "Thanh toán đã bị hủy" : "Payment was cancelled") : (vi ? "Đang xác nhận thanh toán" : "Payment is being confirmed")}
           </h1>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6b7280]">
             {paid
-              ? "Your order is paid and has moved to processing."
+              ? (vi ? "Đơn hàng đã được thanh toán và chuyển sang xử lý." : "Your order is paid and has moved to processing.")
               : cancelled
-                ? "The order is still saved. You can return to My Orders and try payment again."
-                : "Bank confirmation can take a moment. My Orders will show the latest status."}
+                ? (vi ? "Đơn hàng vẫn được lưu. Bạn có thể quay lại Đơn hàng của tôi để thanh toán lại." : "The order is still saved. You can return to My Orders and try payment again.")
+                : (vi ? "Ngân hàng có thể cần một chút thời gian để xác nhận. Trạng thái mới nhất sẽ hiển thị trong Đơn hàng của tôi." : "Bank confirmation can take a moment. My Orders will show the latest status.")}
           </p>
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/user-orders" className="rounded-lg bg-[#c87916] px-5 py-3 text-sm font-semibold text-white">View my orders</Link>
-            <Link href="/shop" className="rounded-lg border border-[#eadcc8] px-5 py-3 text-sm font-semibold">Continue shopping</Link>
+            <Link href="/user-orders" className="rounded-lg bg-[#c87916] px-5 py-3 text-sm font-semibold text-white">{vi ? "Xem đơn hàng" : "View my orders"}</Link>
+            <Link href="/shop" className="rounded-lg border border-[#eadcc8] px-5 py-3 text-sm font-semibold">{vi ? "Tiếp tục mua sắm" : "Continue shopping"}</Link>
           </div>
         </section>
       </main>

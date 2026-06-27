@@ -4,7 +4,6 @@ The checkout supports:
 
 - Cash on delivery
 - Real payOS hosted checkout and VietQR
-- Manual bank QR fallback when merchant credentials are not configured
 
 ## Configure payOS
 
@@ -42,18 +41,12 @@ Register that URL in the payOS dashboard. The backend verifies the complete webh
 
 For local webhook testing, expose port `5000` with a tunnel and register the resulting HTTPS URL temporarily.
 
-## Manual QR fallback
+## Fallback behavior
 
-For a classroom demo without payOS merchant keys:
-
-```env
-MANUAL_BANK_QR=https://your-public-image-url.example/store-bank-qr.png
-```
-
-If this variable is empty, the checkout uses the bundled image at
-`frontend/public/images/qr.jpeg`. The checkout asks the customer
-to include the order reference in the transfer note. Manual transfers are not
-auto-confirmed; an administrator must verify and update the order.
+If payOS credentials are missing or invalid, the backend returns an error and
+the checkout should show a clear failure message. The project no longer uses a
+bundled manual QR image fallback; online payment should redirect customers to
+the hosted payOS checkout page.
 
 ## Safety
 

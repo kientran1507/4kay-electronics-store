@@ -20,14 +20,16 @@ const emptyProduct = {
   stock: "",
   image: "",
   description: "",
+  descriptionVi: "",
 };
 const fields: EntityField[] = [
   { key: "name", label: "Product name", required: true, placeholder: "MacBook Air M3" },
-  { key: "category", label: "Category", required: true, placeholder: "Laptop" },
+  { key: "category", label: "Category key", required: true, placeholder: "phone, laptop, tablet..." },
   { key: "price", label: "Price (VND)", type: "number", min: 1, required: true },
   { key: "stock", label: "Stock", type: "number", min: 0, required: true },
   { key: "image", label: "Image URL", type: "url", required: true, placeholder: "https://..." },
   { key: "description", label: "Description", type: "textarea", required: true },
+  { key: "descriptionVi", label: "Vietnamese description", type: "textarea" },
 ];
 
 export default function ProductTable() {
@@ -85,6 +87,7 @@ export default function ProductTable() {
       name: values.name.trim(),
       category: values.category.trim(),
       description: values.description.trim(),
+      descriptionVi: values.descriptionVi.trim(),
       image: values.image.trim(),
       price: Number(values.price),
       stock: Number(values.stock),
@@ -182,6 +185,7 @@ export default function ProductTable() {
           stock: dialogProduct.stock,
           image: dialogProduct.image,
           description: dialogProduct.description,
+          descriptionVi: dialogProduct.descriptionVi || "",
         }}
         submitLabel={editing ? "Save changes" : "Create product"}
         onClose={() => { setCreating(false); setEditing(null); }}

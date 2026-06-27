@@ -2,61 +2,67 @@ const Product = require("../models/productModel");
 const { normalize } = require("./preferenceExtractor");
 
 const USE_CASE_TERMS = {
-  gaming: ["gaming", "game", "rtx", "gtx", "radeon", "gpu", "refresh", "hz", "144hz"],
-  studying: ["student", "study", "office", "portable", "battery", "light"],
+  gaming: ["gaming", "game", "rtx", "gtx", "radeon", "gpu", "144hz"],
+  studying: ["student", "study", "school", "office", "portable", "battery"],
+  study: ["student", "study", "school", "portable", "battery"],
   office: ["office", "work", "business", "word", "excel", "portable"],
   programming: ["programming", "coding", "developer", "ram", "ssd", "i5", "i7", "ryzen"],
   editing: ["editing", "creator", "render", "photo", "video", "rtx", "oled"],
   battery: ["battery", "mah", "pin"],
   portability: ["light", "thin", "portable", "inch"],
   camera: ["camera", "mp", "photo", "video", "ois"],
-  durability: ["durable", "metal", "aluminum", "bền", "ben"],
-  value: ["cheap", "budget", "affordable", "value"],
+  durability: ["durable", "metal", "aluminum", "ben"],
+  value: ["cheap", "budget", "affordable", "value", "gia tot"],
 };
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
 
-const asArray = (value) => {
-  if (!value) return [];
-  return Array.isArray(value) ? value.filter(Boolean) : [value];
+const validBudget = (value) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
 };
+
+const localizedList = (field, locale = "en") =>
+  field?.[locale]?.length ? field[locale] : field?.en || field?.vi || [];
 
 const productText = (product) =>
   normalize([
     product.name,
     product.description,
+    product.descriptionVi,
+    product.brand,
     product.category,
     ...(product.useCases || []),
-    ...(product.strengths || []),
-    ...(product.weaknesses || []),
-    ...(product.bestFor || []),
-    ...(product.notBestFor || []),
-    ...(product.tags || []),
-    product.reviewSummary,
+    ...localizedList(product.highlights, "en"),
+    ...localizedList(product.highlights, "vi"),
+    ...localizedList(product.tradeoffs, "en"),
+    ...localizedList(product.tradeoffs, "vi"),
     ...Object.values(product.specs || {}),
   ].join(" "));
 
-const productIdentityText = (product) => normalize(`${product.name} ${product.category}`);
-
 const matchesCategory = (product, category) => {
   if (!category) return true;
-  const text = productIdentityText(product);
+  if (product.category) {
+    if (category === "accessory") {
+      return ["accessory", "audio", "keyboard", "mouse", "monitor", "storage", "gaming"].includes(product.category);
+    }
+    return product.category === category;
+  }
+  const text = productText(product);
   if (category === "phone") return /phone|iphone|smartphone|android|dien thoai/.test(text);
   if (category === "laptop") return /laptop|macbook|notebook/.test(text);
   if (category === "tablet") return /tablet|ipad|may tinh bang/.test(text);
-  if (category === "accessory") return /accessory|headphone|keyboard|mouse|charger|case|chuot|ban phim|tai nghe/.test(text);
-  return text.includes(category);
+  if (category === "accessory") return /accessory|audio|headphone|keyboard|mouse|charger|case|chuot|ban phim|tai nghe/.test(text);
+  return text.includes(normalize(category));
 };
 
 const matchUseCases = (product, useCases = []) => {
   const text = productText(product);
+  const keys = new Set(product.useCases || []);
   return useCases.filter((useCase) => {
     const terms = USE_CASE_TERMS[useCase] || [useCase];
-    return terms.some((term) => text.includes(normalize(term)));
+    return keys.has(useCase) || terms.some((term) => text.includes(normalize(term)));
   });
 };
 
@@ -76,6 +82,9 @@ const getRatingScore = (product) => {
 
 const scoreProduct = (product, needs = {}) => {
   let score = 0;
+  const budget = validBudget(needs.budget);
+  const category = needs.category || needs.deviceType;
+  const text = productText(product);
   const details = {
     categoryMatch: false,
     budgetMatch: false,
@@ -84,23 +93,18 @@ const scoreProduct = (product, needs = {}) => {
     matchedUseCases: [],
     matchedSpecs: [],
   };
-  const text = productText(product);
-  const category = needs.category || needs.deviceType;
 
   if (matchesCategory(product, category)) {
     details.categoryMatch = Boolean(category);
     score += category ? 32 : 0;
-  } else if (category) {
-    score -= 45;
-  }
+  } else if (category) score -= 45;
 
-  if (needs.budget) {
-    if (product.price <= needs.budget) {
+  if (budget) {
+    if (product.price <= budget) {
       details.budgetMatch = true;
       score += 28;
     } else {
-      const overRatio = (product.price - needs.budget) / needs.budget;
-      score -= Math.min(35, overRatio * 55);
+      score -= Math.min(35, ((product.price - budget) / budget) * 55);
     }
   }
 
@@ -109,125 +113,87 @@ const scoreProduct = (product, needs = {}) => {
     details.brandMatch = true;
     score += 14;
   }
-
-  const avoidedBrands = needs.avoidedBrands || [];
-  if (avoidedBrands.some((brand) => text.includes(normalize(brand)))) {
+  if ((needs.avoidedBrands || []).some((brand) => text.includes(normalize(brand)))) {
     details.avoidedBrandMatch = true;
     score -= 60;
   }
 
-  details.matchedUseCases = matchUseCases(product, [
-    ...(needs.useCases || []),
-    ...(needs.importantFactors || []),
-  ]);
-  score += details.matchedUseCases.length * 10;
-
+  details.matchedUseCases = matchUseCases(product, [...(needs.useCases || []), ...(needs.importantFactors || [])]);
   details.matchedSpecs = matchSpecs(product, needs.specs);
+  score += details.matchedUseCases.length * 10;
   score += details.matchedSpecs.length * 8;
-
   score += getRatingScore(product);
-  if (product.stock > 0) score += 6;
-  if (product.stock === 0) score -= 18;
+  score += product.stock > 0 ? 6 : -18;
 
   return { score: Math.round(score), details };
 };
 
-const buildReason = (product, needs, scoring) => {
+const buildReason = (product, needs, scoring, locale = "en") => {
   const parts = [];
-  if (scoring.details.categoryMatch) parts.push(`it is in the ${needs.category} category you asked for`);
-  if (scoring.details.budgetMatch) parts.push(`it stays within ${formatCurrency(needs.budget)}`);
-  if (scoring.details.brandMatch) parts.push("it matches your preferred brand");
+  if (scoring.details.categoryMatch) parts.push(locale === "vi" ? "đúng loại thiết bị bạn cần" : "it is the device type you asked for");
+  if (scoring.details.budgetMatch) parts.push(locale === "vi" ? `nằm trong ngân sách ${formatCurrency(needs.budget)}` : `it stays within ${formatCurrency(needs.budget)}`);
+  if (scoring.details.brandMatch) parts.push(locale === "vi" ? "đúng thương hiệu bạn thích" : "it matches your preferred brand");
   if (scoring.details.matchedUseCases.length) {
-    parts.push(`it fits ${scoring.details.matchedUseCases.slice(0, 2).join(" and ")} use`);
+    parts.push(locale === "vi" ? `phù hợp cho ${scoring.details.matchedUseCases.slice(0, 2).join(" và ")}` : `it fits ${scoring.details.matchedUseCases.slice(0, 2).join(" and ")}`);
   }
-  if (scoring.details.matchedSpecs.length) {
-    parts.push(`it matches requested specs like ${scoring.details.matchedSpecs.slice(0, 2).join(" and ")}`);
-  }
-  if (product.rating) parts.push(`it has a ${product.rating}/5 rating signal`);
-  if (product.stock > 0) parts.push("it is currently available");
-
-  if (product.strengths?.length) {
-    parts.push(product.strengths[0]);
-  }
-
-  return parts.length
-    ? `I recommend this because ${parts.slice(0, 3).join(", ")}.`
-    : "This is one of the closest matches in the current catalog.";
+  const highlight = localizedList(product.highlights, locale)[0];
+  if (highlight) parts.push(highlight);
+  if (!parts.length) return locale === "vi" ? "Đây là một trong những lựa chọn phù hợp nhất trong danh mục hiện tại." : "This is one of the closest matches in the current catalog.";
+  return locale === "vi" ? `Tôi gợi ý sản phẩm này vì ${parts.slice(0, 3).join(", ")}.` : `I recommend this because ${parts.slice(0, 3).join(", ")}.`;
 };
 
-const buildTradeoff = (product, needs) => {
-  if (product.weaknesses?.length) return product.weaknesses[0];
+const buildTradeoff = (product, needs, locale = "en") => {
+  const savedTradeoff = localizedList(product.tradeoffs, locale)[0];
+  if (savedTradeoff) return savedTradeoff;
   if (needs.budget && product.price > needs.budget) {
-    return `It is above your stated budget by about ${formatCurrency(product.price - needs.budget)}.`;
+    return locale === "vi" ? `Sản phẩm cao hơn ngân sách khoảng ${formatCurrency(product.price - needs.budget)}.` : `It is above your budget by about ${formatCurrency(product.price - needs.budget)}.`;
   }
-  if (product.stock <= 0) return "It is not currently in stock, so it may not be a practical pick right now.";
-  if (needs.importantFactors?.includes("price") && product.price > 10000000) {
-    return "It is not the absolute cheapest option; you are paying more for capability.";
-  }
+  if (product.stock <= 0) return locale === "vi" ? "Sản phẩm hiện đã hết hàng." : "It is not currently in stock.";
   if (needs.useCases?.includes("gaming") && !/rtx|gtx|radeon|gpu/i.test(productText(product))) {
-    return "It should handle light gaming, but it is not the strongest gaming-focused choice.";
+    return locale === "vi" ? "Phù hợp game nhẹ hơn là game nặng." : "It is better suited to light gaming than demanding games.";
   }
-  return "The trade-off is that it may not be the best in every area, so compare it against price and your top priority.";
+  return locale === "vi" ? "Hãy cân đối giá, hiệu năng và tính di động trước khi chọn." : "Balance its price, performance, and portability before choosing.";
 };
 
-const buildBestFor = (product, needs) => {
-  if (product.bestFor?.length) return product.bestFor[0];
-  if (needs.useCases?.length) return `Best for ${needs.useCases.slice(0, 2).join(" and ")}.`;
-  if (needs.importantFactors?.length) return `Best for shoppers prioritizing ${needs.importantFactors[0]}.`;
-  return "Best for users who want a balanced option from this category.";
+const buildBestFor = (product, needs, locale = "en") => {
+  const uses = needs.useCases?.length ? needs.useCases : product.useCases;
+  if (!uses?.length) return locale === "vi" ? "Nhu cầu sử dụng cân bằng." : "Balanced everyday use.";
+  return locale === "vi" ? `Phù hợp cho ${uses.slice(0, 2).join(" và ")}.` : `Best for ${uses.slice(0, 2).join(" and ")}.`;
 };
 
-const buildBetterThan = (product, recommendations) => {
-  const cheaper = recommendations.find((item) => item.product.price > product.price);
-  if (cheaper) return `Better value than ${cheaper.product.name} if you want to spend less.`;
-  const lowerScore = recommendations.find((item) => item.score < recommendations[0]?.score);
-  if (lowerScore) return `A stronger match than ${lowerScore.product.name} for your stated needs.`;
-  return "Better than a random pick because it matches more of your stated needs.";
-};
-
-const toProductPayload = (product) => ({
+const toProductPayload = (product, locale = "en") => ({
   _id: product._id,
   name: product.name,
-  description: product.description,
+  description: locale === "vi" && product.descriptionVi ? product.descriptionVi : product.description,
+  descriptionVi: product.descriptionVi || "",
   price: product.price,
   stock: product.stock,
   image: product.image,
+  images: product.images || [],
   category: product.category,
+  brand: product.brand || "",
   specs: product.specs || {},
   useCases: product.useCases || [],
-  strengths: product.strengths || [],
-  weaknesses: product.weaknesses || [],
-  bestFor: product.bestFor || [],
-  notBestFor: product.notBestFor || [],
-  reviewSummary: product.reviewSummary || "",
-  tags: product.tags || [],
+  highlights: product.highlights || { en: [], vi: [] },
+  tradeoffs: product.tradeoffs || { en: [], vi: [] },
   rating: product.rating || null,
   reviewCount: product.reviewCount || 0,
+  warranty: product.warranty || "",
 });
 
-const toRecommendation = (product, needs, scoring) => ({
-  product: toProductPayload(product),
+const toRecommendation = (product, needs, scoring, locale = "en") => ({
+  product: toProductPayload(product, locale),
   score: scoring.score,
-  reason: buildReason(product, needs, scoring),
-  tradeoff: buildTradeoff(product, needs),
+  reason: buildReason(product, needs, scoring, locale),
+  tradeoff: buildTradeoff(product, needs, locale),
   betterThan: "",
-  bestFor: buildBestFor(product, needs),
+  bestFor: buildBestFor(product, needs, locale),
 });
 
 const getCandidateProducts = async (needs) => {
   const query = {};
-  if (needs.budget) query.price = { $lte: Math.round(needs.budget * 1.25) };
-
-  const preferredBrands = needs.preferredBrands || [];
-  if (preferredBrands.length) {
-    query.$or = preferredBrands.flatMap((brand) => [
-      { name: { $regex: brand, $options: "i" } },
-      { description: { $regex: brand, $options: "i" } },
-      { category: { $regex: brand, $options: "i" } },
-      { tags: { $regex: brand, $options: "i" } },
-    ]);
-  }
-
+  const budget = validBudget(needs.budget);
+  if (budget) query.price = { $lte: Math.round(budget * 1.25) };
   const products = await Product.find(query).limit(100);
   const fallback = products.length ? products : await Product.find().limit(100);
   const category = needs.category || needs.deviceType;
@@ -235,57 +201,39 @@ const getCandidateProducts = async (needs) => {
   return typed.length >= 3 ? typed : fallback;
 };
 
-const recommendProducts = async (needs, limit = 5) => {
-  const candidates = await getCandidateProducts(needs);
+const recommendProducts = async (needs, limit = 5, locale = "en") => {
+  const safeNeeds = { ...needs, budget: validBudget(needs.budget) };
+  const candidates = await getCandidateProducts(safeNeeds);
   const ranked = candidates
-    .map((product) => {
-      const scoring = scoreProduct(product, needs);
-      return toRecommendation(product, needs, scoring);
-    })
+    .map((product) => toRecommendation(product, safeNeeds, scoreProduct(product, safeNeeds), locale))
     .sort((a, b) => b.score - a.score || a.product.price - b.product.price);
-
-  const recommendedProducts = ranked.slice(0, limit).map((item, index, topItems) => ({
+  const recommendedProducts = ranked.slice(0, limit).map((item, index, top) => ({
     ...item,
-    betterThan: buildBetterThan(item.product, topItems),
+    betterThan: top[index + 1]
+      ? locale === "vi" ? `Phù hợp hơn ${top[index + 1].product.name} với nhu cầu bạn đã nêu.` : `A stronger match than ${top[index + 1].product.name} for your stated needs.`
+      : "",
   }));
-
   const alternatives = ranked.slice(limit, limit + 3).map((item) => ({
     product: item.product,
-    reason:
-      item.product.price < recommendedProducts[0]?.product.price
-        ? "Cheaper alternative if price matters more than overall match."
-        : "Alternative worth checking if you prefer its brand, design, or specs.",
+    reason: locale === "vi" ? "Một lựa chọn khác đáng xem nếu bạn ưu tiên giá hoặc thương hiệu." : "Worth checking if you prioritize its price or brand.",
   }));
-
   return { recommendedProducts, alternatives };
 };
 
-const compareProducts = async (message, limit = 4) => {
-  const pieces = message
-    .split(/\b(?:and|vs|versus|compare|with|,|&)\b/i)
-    .map((piece) => piece.trim())
-    .filter((piece) => piece.length > 2);
-
+const compareProducts = async (message, limit = 4, locale = "en") => {
+  const pieces = message.split(/\b(?:and|vs|versus|compare|with|,|&)\b/i).map((piece) => piece.trim()).filter((piece) => piece.length > 2);
   const productQueries = pieces.slice(0, limit).map((piece) => ({
     $or: [
       { name: { $regex: piece, $options: "i" } },
       { description: { $regex: piece, $options: "i" } },
+      { descriptionVi: { $regex: piece, $options: "i" } },
     ],
   }));
-
   const products = productQueries.length ? await Product.find({ $or: productQueries }).limit(limit) : [];
-  const recommendedProducts = products.map((product) => {
-    const scoring = scoreProduct(product, {});
-    return toRecommendation(product, {}, scoring);
-  });
-
   return {
-    recommendedProducts,
+    recommendedProducts: products.map((product) => toRecommendation(product, {}, scoreProduct(product, {}), locale)),
     alternatives: [],
   };
 };
 
-module.exports = {
-  compareProducts,
-  recommendProducts,
-};
+module.exports = { compareProducts, recommendProducts };

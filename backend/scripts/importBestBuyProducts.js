@@ -4,7 +4,7 @@ const Product = require("../models/productModel");
 const { fetchBestBuyProducts, mapBestBuyProduct } = require("../services/productImport/bestBuyProvider");
 
 const upsertProduct = async (product) => {
-  const existing = await Product.findOne({ source: product.source, sourceProductId: product.sourceProductId });
+  const existing = await Product.findOne({ name: product.name });
   if (existing) {
     await Product.findByIdAndUpdate(existing._id, product);
     return "updated";
@@ -25,7 +25,7 @@ const run = async () => {
       const products = await fetchBestBuyProducts({ keyword });
       for (const raw of products) {
         const product = mapBestBuyProduct(raw);
-        if (!product.name || !product.sourceProductId) {
+        if (!product.name) {
           summary.skipped += 1;
           continue;
         }

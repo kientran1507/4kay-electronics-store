@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   createOrder,
+  quoteOrder,
   getUserOrders,
   getUserOrderDetails,
   getAllOrders,
@@ -11,6 +12,7 @@ const { protect, adminProtect } = require("../middleware/authMiddleware"); // Mi
 const router = express.Router();
 
 // Route tạo đơn hàng
+router.post("/quote", protect, quoteOrder);
 router.post("/createOrder", protect, createOrder);
 
 // Route lấy danh sách đơn hàng của người dùng

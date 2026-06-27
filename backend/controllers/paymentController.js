@@ -119,3 +119,8 @@ exports.getStatus = async (req, res) => {
     return res.status(500).json({ message: "Could not load payment status." });
   }
 };
+
+exports._test = {
+  mapProviderStatus,
+  serializePayment,
+};

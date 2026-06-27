@@ -115,7 +115,13 @@ export default function TableOrders() {
                     <tr key={order._id} className="transition hover:bg-slate-50">
                       <td className="px-5 py-3"><p className="font-semibold text-slate-900">#{order._id.slice(-8).toUpperCase()}</p><p className="mt-1 max-w-52 truncate text-xs text-slate-500" title={order.shippingAddress}>{order.shippingAddress}</p></td>
                       <td className="px-4 py-3"><p className="font-medium">{order.items.length} item{order.items.length === 1 ? "" : "s"}</p><p className="max-w-48 truncate text-xs text-slate-500">{order.items.map((item) => (item.productId as any)?.name).filter(Boolean).join(", ") || "Product details unavailable"}</p></td>
-                      <td className="px-4 py-3 font-semibold">{formatVND(order.totalPrice)}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold">{formatVND(order.totalPrice)}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Ship {order.shippingFee ? formatVND(order.shippingFee) : "Free"}
+                          {order.discountAmount ? ` | Voucher -${formatVND(order.discountAmount)}` : ""}
+                        </p>
+                      </td>
                       <td className="px-4 py-3"><p className="font-medium">{order.paymentProvider === "payos" ? "PayOS" : order.paymentMethod}</p><p className="text-xs capitalize text-slate-500">{order.paymentProvider?.replaceAll("_", " ")}</p></td>
                       <td className="px-4 py-3"><PaymentBadge status={order.paymentStatus} /></td>
                       <td className="px-4 py-3"><AdminSelect value={order.status} disabled={updateStatus.isPending} onChange={(value) => updateStatus.mutate({ orderId: order._id, nextStatus: value as Order["status"] })} options={orderStatuses.map((item) => ({ value: item, label: item }))} className="min-w-[170px]" triggerClassName="rounded-full text-xs font-semibold shadow-none" triggerStyle={statusStyle(order.status)} /></td>

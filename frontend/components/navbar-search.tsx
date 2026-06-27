@@ -5,6 +5,8 @@ import { Input } from "./ui/input";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import debounce from "lodash/debounce";
+import { useLocale } from "@/hooks/use-locale";
+import { uiText } from "@/lib/i18n";
 
 const NavbarSearch = () => {
   const [search, setSearch] = useState<string>("");
@@ -13,6 +15,7 @@ const NavbarSearch = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchStr = searchParams.get("q");
+  const { locale } = useLocale();
 
   const performSearch = useCallback(async (searchTerm: string) => {
     try {
@@ -67,7 +70,7 @@ const NavbarSearch = () => {
       <Input
         size={35}
         className="h-10 border-[#e8dfd4] bg-white pr-11 text-xs outline-none placeholder:text-[#a29a90]"
-        placeholder="Search for products..."
+        placeholder={uiText[locale].searchPlaceholder}
         onChange={handleSearchChange}
         value={search}
         disabled={isLoading}

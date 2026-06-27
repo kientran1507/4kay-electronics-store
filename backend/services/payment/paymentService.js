@@ -4,11 +4,11 @@ const createManualPayment = ({ orderId, amount }) => {
   const payment = {
     orderId,
     paymentUrl: "",
-    qrCode: process.env.MANUAL_BANK_QR || "",
+    qrCode: "",
     amount,
     status: "pending",
     provider: "manual_bank_transfer",
-    message: "payOS keys are missing. Show manual bank transfer QR or use COD fallback.",
+    message: "payOS keys are missing. Use cash on delivery or configure payOS.",
   };
   paymentStore.set(String(orderId), payment);
   return payment;

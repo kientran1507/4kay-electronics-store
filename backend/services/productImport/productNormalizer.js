@@ -9,12 +9,21 @@ const inferUseCases = (text = "") => {
   return [...new Set(useCases)];
 };
 
+const normalizeCategory = (value = "") => {
+  const text = String(value).toLowerCase();
+  if (/phone|smartphone|điện thoại|dien thoai/.test(text)) return "phone";
+  if (/laptop|notebook|macbook/.test(text)) return "laptop";
+  if (/tablet|ipad|máy tính bảng|may tinh bang/.test(text)) return "tablet";
+  if (/headphone|earbud|audio|tai nghe/.test(text)) return "audio";
+  if (/keyboard|bàn phím|ban phim/.test(text)) return "keyboard";
+  if (/mouse|mice|chuột|chuot/.test(text)) return "mouse";
+  return "accessory";
+};
+
 const normalizeExternalProduct = (raw, source, usdToVnd = 25000) => {
   const text = [
     raw.name,
     raw.title,
-    raw.shortDescription,
-    raw.longDescription,
     raw.description,
     ...(raw.features || []),
   ].join(" ");
@@ -25,30 +34,24 @@ const normalizeExternalProduct = (raw, source, usdToVnd = 25000) => {
     name: raw.name || raw.title,
     brand: raw.manufacturer || raw.brand || "",
     description: raw.longDescription || raw.shortDescription || raw.description || raw.name || raw.title,
-    shortDescription: raw.shortDescription || raw.description || "",
-    longDescription: raw.longDescription || "",
+    descriptionVi: raw.descriptionVi || raw.description_vi || "",
     price,
-    currency: "VND",
-    originalPrice: usdPrice || null,
-    originalCurrency: raw.currency || "USD",
     stock: raw.inStock === false ? 0 : Number(raw.stock || 100),
     image: raw.image || raw.largeImage || raw.thumbnailImage || raw.images?.[0] || "",
     images: raw.images || [raw.image || raw.largeImage || raw.thumbnailImage].filter(Boolean),
-    category: raw.category || raw.categoryPath?.[0]?.name || raw.productCategory || "Imported",
+    category: normalizeCategory(raw.category || raw.categoryPath?.[0]?.name || raw.productCategory),
     specs: raw.specs || raw.specifications || {},
     useCases: raw.useCases || inferUseCases(text),
-    strengths: raw.strengths || raw.features || [],
-    weaknesses: raw.weaknesses || [],
-    bestFor: raw.bestFor || [],
-    notBestFor: raw.notBestFor || [],
-    tags: raw.tags || inferUseCases(text),
+    highlights: {
+      en: raw.highlights?.en || raw.strengths || raw.features || [],
+      vi: raw.highlights?.vi || [],
+    },
+    tradeoffs: {
+      en: raw.tradeoffs?.en || raw.weaknesses || [],
+      vi: raw.tradeoffs?.vi || [],
+    },
     rating: raw.customerReviewAverage || raw.rating || null,
     reviewCount: raw.customerReviewCount || raw.reviewCount || 0,
-    reviewSummary: raw.reviewSummary || "",
-    source,
-    sourceProductId: String(raw.sku || raw.asin || raw.id || raw.sourceProductId || ""),
-    sourceUrl: raw.url || raw.productUrl || "",
-    availability: raw.inStock === false ? "out_of_stock" : "in_stock",
   };
 };
 

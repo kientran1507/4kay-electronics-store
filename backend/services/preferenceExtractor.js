@@ -1,31 +1,31 @@
 const DEVICE_KEYWORDS = {
-  laptop: ["laptop", "notebook", "macbook"],
-  phone: ["phone", "smartphone", "iphone", "android"],
-  tablet: ["tablet", "ipad"],
-  accessory: ["accessory", "headphone", "keyboard", "mouse", "charger", "case"],
+  laptop: ["laptop", "notebook", "macbook", "may tinh xach tay"],
+  phone: ["phone", "smartphone", "iphone", "android", "dien thoai"],
+  tablet: ["tablet", "ipad", "may tinh bang"],
+  accessory: ["accessory", "headphone", "keyboard", "mouse", "charger", "case", "phu kien", "tai nghe", "ban phim", "chuot", "sac"],
 };
 
 const USE_CASE_KEYWORDS = {
-  gaming: ["gaming", "game", "gpu", "graphics", "fps"],
-  studying: ["student", "study", "studying", "school", "university", "durable"],
-  office: ["office", "work", "excel", "word", "meeting"],
-  programming: ["programming", "coding", "developer", "software"],
-  editing: ["editing", "video", "photo", "photoshop", "render"],
+  gaming: ["gaming", "game", "gpu", "graphics", "fps", "choi game", "game nhe", "game nang"],
+  studying: ["student", "study", "studying", "school", "university", "durable", "sinh vien", "hoc", "hoc tap", "di hoc"],
+  office: ["office", "work", "excel", "word", "meeting", "van phong", "lam viec", "hop"],
+  programming: ["programming", "coding", "developer", "software", "lap trinh", "code"],
+  editing: ["editing", "video", "photo", "photoshop", "render", "chinh anh", "dung phim", "do hoa"],
   battery: ["battery", "pin", "long lasting"],
-  portability: ["portable", "lightweight", "thin", "travel"],
-  camera: ["camera", "photo", "video", "selfie"],
+  portability: ["portable", "lightweight", "thin", "travel", "mong nhe", "de mang", "di chuyen"],
+  camera: ["camera", "photo", "video", "selfie", "chup anh", "quay phim"],
   durability: ["durable", "strong build", "bền", "ben"],
-  value: ["cheap", "cheapest", "budget", "affordable", "good enough"],
+  value: ["cheap", "cheapest", "budget", "affordable", "good enough", "re", "gia tot", "tiet kiem"],
 };
 
 const FACTOR_KEYWORDS = {
-  price: ["cheap", "cheapest", "budget", "affordable", "price"],
-  performance: ["fast", "performance", "powerful", "gaming", "programming"],
+  price: ["cheap", "cheapest", "budget", "affordable", "price", "re", "ngan sach", "gia"],
+  performance: ["fast", "performance", "powerful", "gaming", "programming", "manh", "hieu nang", "muot"],
   battery: ["battery", "pin"],
   camera: ["camera", "photo", "video"],
   portability: ["portable", "light", "thin"],
   durability: ["durable", "bền", "ben"],
-  display: ["screen", "display", "oled", "hz"],
+  display: ["screen", "display", "oled", "hz", "man hinh"],
 };
 
 const SPEC_PATTERNS = [
@@ -181,3 +181,4 @@ module.exports = {
   normalize,
   toPublicNeeds,
 };
+

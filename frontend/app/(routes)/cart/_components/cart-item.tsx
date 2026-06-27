@@ -4,6 +4,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import formatVND from "@/app/utils/formatCurrency";
 import useCart from "@/hooks/use-cart";
 import { type CartItem as CartItemType } from "@/types";
+import { useLocale } from "@/hooks/use-locale";
 
 interface CartItemProps {
   data: CartItemType;
@@ -11,6 +12,8 @@ interface CartItemProps {
 
 export default function CartItem({ data }: CartItemProps) {
   const cart = useCart();
+  const { locale } = useLocale();
+  const vi = locale === "vi";
   const itemTotal = data.price * data.quantity;
 
   return (
@@ -30,14 +33,14 @@ export default function CartItem({ data }: CartItemProps) {
         <Link href={`/product/${data.productId}`} className="mt-1 block truncate text-base font-semibold hover:text-[#c87916]">
           {data.name}
         </Link>
-        <p className="mt-2 text-sm text-[#6b7280]">{formatVND(data.price)} each</p>
+        <p className="mt-2 text-sm text-[#6b7280]">{formatVND(data.price)} {vi ? "mỗi sản phẩm" : "each"}</p>
 
         <div className="mt-4 flex items-center gap-3">
           <div className="flex h-10 items-center rounded-lg border border-[#eadcc8] bg-[#fffdf9]">
             <button
               type="button"
               onClick={() => cart.removeItem(data.productId)}
-              aria-label={`Decrease ${data.name} quantity`}
+              aria-label={vi ? `Giảm số lượng ${data.name}` : `Decrease ${data.name} quantity`}
               className="flex h-10 w-10 items-center justify-center text-[#6b7280] hover:text-[#c87916]"
             >
               <Minus className="h-4 w-4" />
@@ -46,7 +49,7 @@ export default function CartItem({ data }: CartItemProps) {
             <button
               type="button"
               onClick={() => cart.addItem(data.productId)}
-              aria-label={`Increase ${data.name} quantity`}
+              aria-label={vi ? `Tăng số lượng ${data.name}` : `Increase ${data.name} quantity`}
               className="flex h-10 w-10 items-center justify-center text-[#6b7280] hover:text-[#c87916]"
             >
               <Plus className="h-4 w-4" />
@@ -58,13 +61,13 @@ export default function CartItem({ data }: CartItemProps) {
             className="inline-flex h-10 items-center gap-2 px-2 text-sm text-[#6b7280] hover:text-red-600"
           >
             <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Remove</span>
+            <span className="hidden sm:inline">{vi ? "Xóa" : "Remove"}</span>
           </button>
         </div>
       </div>
 
       <div className="flex items-end justify-between border-t border-[#f0e6d8] pt-4 sm:h-full sm:flex-col sm:border-0 sm:pt-0">
-        <span className="text-xs text-[#8b8176]">Item total</span>
+        <span className="text-xs text-[#8b8176]">{vi ? "Thành tiền" : "Item total"}</span>
         <p className="text-lg font-bold">{formatVND(itemTotal)}</p>
       </div>
     </li>

@@ -19,7 +19,7 @@ export const useVrmAvatar = (url = "/models/avatar/avatar.vrm") => {
   useEffect(() => {
     if (!vrm) return;
     VRMUtils.removeUnnecessaryVertices(vrm.scene);
-    VRMUtils.removeUnnecessaryJoints(vrm.scene);
+    VRMUtils.combineSkeletons(vrm.scene);
 
     vrm.scene.updateMatrixWorld(true);
     const box = new Box3().setFromObject(vrm.scene);

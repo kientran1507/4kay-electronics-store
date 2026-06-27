@@ -13,6 +13,8 @@ import { useAssistantTts } from "@/hooks/useAssistantTts";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import formatVND from "@/app/utils/formatCurrency";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/hooks/use-locale";
+import { getProductText, uiText } from "@/lib/i18n";
 
 type ChatMessage = {
   id: string;
@@ -25,18 +27,29 @@ type ChatMessage = {
 const createMessageId = () =>
   `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
-const starterMessages = [
-  "I need a laptop under 20 million VND for programming and light gaming",
-  "Recommend me a phone with good camera and battery",
-  "I'm a student and I need something durable",
-  "I want the cheapest option but still good enough for office work",
-];
+const starterMessages = {
+  en: [
+    "I need a laptop under 20 million VND for programming and light gaming",
+    "Recommend me a phone with good camera and battery",
+    "I'm a student and I need something durable",
+    "I want the cheapest option but still good enough for office work",
+  ],
+  vi: [
+    "Tôi cần laptop dưới 20 triệu để lập trình và chơi game nhẹ",
+    "Gợi ý điện thoại chụp ảnh đẹp và pin tốt",
+    "Tôi là sinh viên và cần máy bền",
+    "Tôi muốn lựa chọn rẻ nhất nhưng đủ làm văn phòng",
+  ],
+};
 
 const AIAssistant = () => {
   const { user } = useAuth();
   const pathname = usePathname();
   const cart = useCart();
   const tts = useAssistantTts();
+  const { locale } = useLocale();
+  const vi = locale === "vi";
+  const text = uiText[locale];
   const [open, setOpen] = useState(false);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [input, setInput] = useState("");
@@ -45,14 +58,14 @@ const AIAssistant = () => {
     {
       id: createMessageId(),
       role: "assistant",
-      content: "Tell me what device you need, your budget, and what you will use it for. I will recommend products from the current catalog.",
+      content: uiText.en.assistantIntro,
     },
   ]);
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const speech = useSpeechRecognition({
-    lang: process.env.NEXT_PUBLIC_SPEECH_LANG || "en-US",
+    lang: locale === "vi" ? "vi-VN" : process.env.NEXT_PUBLIC_SPEECH_LANG || "en-US",
     onInterimTranscript: useCallback((text: string) => {
       setInput(text);
       setAvatarState("listening");
@@ -75,6 +88,14 @@ const AIAssistant = () => {
     const timer = window.setTimeout(() => setAvatarState("idle"), 1400);
     return () => window.clearTimeout(timer);
   }, [open, loading, messages, speech.isListening]);
+
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length !== 1 || current[0].role !== "assistant") return current;
+      if (![uiText.en.assistantIntro, uiText.vi.assistantIntro].includes(current[0].content)) return current;
+      return [{ ...current[0], content: text.assistantIntro }];
+    });
+  }, [text.assistantIntro]);
 
   useEffect(() => {
     const handleOpen = (event: Event) => {
@@ -104,7 +125,9 @@ const AIAssistant = () => {
         message: trimmed,
         conversationId,
         userId: user?._id,
+        locale,
         context: {
+          locale,
           source: "storefront-assistant",
           pathname,
           pageContext:
@@ -136,7 +159,7 @@ const AIAssistant = () => {
         {
           id: createMessageId(),
           role: "assistant",
-          content: "I could not reach the recommendation service. Please try again in a moment.",
+          content: locale === "vi" ? "Tôi chưa kết nối được dịch vụ gợi ý. Bạn thử lại sau một chút nhé." : "I could not reach the recommendation service. Please try again in a moment.",
         },
       ]);
     } finally {
@@ -174,8 +197,8 @@ const AIAssistant = () => {
             <div className="flex items-center gap-3">
               <span className="relative h-12 w-12 overflow-hidden rounded-full border border-[#eadcc8] bg-[#fff4e6]"><Image src="/images/ai-assistant-portrait.png" alt="4Kay AI assistant" fill className="object-cover" sizes="48px" /></span>
               <div>
-                <p className="text-sm font-semibold text-gray-950">4Kay AI Assistant</p>
-                <p className="text-xs text-emerald-600">Online</p>
+                <p className="text-sm font-semibold text-gray-950">{text.assistantTitle}</p>
+                <p className="text-xs text-emerald-600">{vi ? "Đang trực tuyến" : "Online"}</p>
               </div>
             </div>
             <div className="flex items-center">
@@ -183,12 +206,12 @@ const AIAssistant = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowVoiceSettings((value) => !value)}
-                aria-label="Voice settings"
-                title="Voice settings"
+                aria-label={vi ? "Cài đặt giọng đọc" : "Voice settings"}
+                title={vi ? "Cài đặt giọng đọc" : "Voice settings"}
               >
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close assistant">
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label={vi ? "Đóng trợ lý" : "Close assistant"}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -197,7 +220,7 @@ const AIAssistant = () => {
           {showVoiceSettings && (
             <div className="flex items-center gap-2 border-b bg-[#fffaf3] px-4 py-3">
               <label htmlFor="assistant-voice" className="shrink-0 text-xs font-medium text-gray-700">
-                Voice
+                {vi ? "Giọng đọc" : "Voice"}
               </label>
               <select
                 id="assistant-voice"
@@ -206,7 +229,7 @@ const AIAssistant = () => {
                 disabled={!tts.supported || !tts.voices.length}
                 className="h-9 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs text-gray-700"
               >
-                {!tts.voices.length && <option>No browser voices found</option>}
+                {!tts.voices.length && <option>{vi ? "Không tìm thấy giọng đọc trong trình duyệt" : "No browser voices found"}</option>}
                 {tts.voices.map((voice) => (
                   <option key={`${voice.name}-${voice.lang}`} value={voice.name}>
                     {voice.name} ({voice.lang})
@@ -217,11 +240,11 @@ const AIAssistant = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => speak("Hello! I am your 4Kay shopping assistant.")}
+                onClick={() => speak(locale === "vi" ? "Xin chào! Tôi là trợ lý mua sắm 4Kay." : "Hello! I am your 4Kay shopping assistant.")}
                 disabled={!tts.supported}
               >
                 <Play className="mr-1 h-3.5 w-3.5" />
-                Test
+                {vi ? "Nghe thử" : "Test"}
               </Button>
             </div>
           )}
@@ -242,21 +265,23 @@ const AIAssistant = () => {
                   <button
                     className="ml-2 inline-flex align-bottom text-gray-400 hover:text-gray-700"
                     onClick={() => speak(message.content)}
-                    aria-label="Read assistant response aloud"
+                    aria-label={vi ? "Đọc câu trả lời thành tiếng" : "Read assistant response aloud"}
                   >
                     <Volume2 className="h-4 w-4" />
                   </button>
                 )}
                 {message.products && message.products.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    {message.products.map((recommendation) => (
+                    {message.products.map((recommendation) => {
+                      const translatedProduct = getProductText(recommendation.product, locale);
+                      return (
                       <div key={recommendation.product._id} className="rounded-lg border bg-white p-3 text-left shadow-sm">
                         <div className="flex gap-3">
                           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
                             {recommendation.product.image && (
                               <Image
                                 src={recommendation.product.image}
-                                alt={recommendation.product.name}
+                                alt={translatedProduct.name}
                                 fill
                                 className="object-cover"
                                 sizes="64px"
@@ -264,54 +289,58 @@ const AIAssistant = () => {
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="line-clamp-2 text-sm font-semibold text-gray-950">{recommendation.product.name}</p>
+                            <p className="line-clamp-2 text-sm font-semibold text-gray-950">{translatedProduct.name}</p>
                             <p className="mt-1 text-sm font-medium text-gray-800">{formatVND(recommendation.product.price)}</p>
                             <p className="text-xs text-gray-500">
-                              {recommendation.product.stock > 0 ? `Stock: ${recommendation.product.stock}` : "Out of stock"}
+                              {recommendation.product.stock > 0 ? `${text.stock}: ${recommendation.product.stock}` : text.outOfStock}
                               {recommendation.product.rating ? ` · ${recommendation.product.rating}/5` : ""}
                             </p>
                           </div>
                         </div>
                         <div className="mt-3 space-y-2 text-xs text-gray-700">
-                          <p><span className="font-semibold text-gray-950">Why:</span> {recommendation.reason}</p>
-                          <p><span className="font-semibold text-gray-950">Trade-off:</span> {recommendation.tradeoff}</p>
-                          <p><span className="font-semibold text-gray-950">Best for:</span> {recommendation.bestFor}</p>
+                          <p><span className="font-semibold text-gray-950">{text.why}:</span> {recommendation.reason}</p>
+                          <p><span className="font-semibold text-gray-950">{text.tradeoff}:</span> {recommendation.tradeoff}</p>
+                          <p><span className="font-semibold text-gray-950">{text.bestFor}:</span> {recommendation.bestFor}</p>
                           {recommendation.betterThan && (
-                            <p><span className="font-semibold text-gray-950">Compared:</span> {recommendation.betterThan}</p>
+                            <p><span className="font-semibold text-gray-950">{text.compared}:</span> {recommendation.betterThan}</p>
                           )}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" asChild>
-                            <Link href={`/product/${recommendation.product._id}`}>View details</Link>
+                            <Link href={`/product/${recommendation.product._id}`}>{text.viewDetails}</Link>
                           </Button>
                           <Button size="sm" onClick={() => cart.addItem(recommendation.product._id)}>
                             <ShoppingCart className="mr-1 h-3.5 w-3.5" />
-                            Add
+                            {text.add}
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setInput(`Compare ${recommendation.product.name} with `)}
+                            onClick={() => setInput(locale === "vi" ? `So sánh ${translatedProduct.name} với ` : `Compare ${translatedProduct.name} with `)}
                           >
-                            Compare
+                            {text.compare}
                           </Button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 {message.alternatives && message.alternatives.length > 0 && (
                   <div className="mt-3 rounded-lg border border-dashed bg-gray-50 p-3 text-left">
-                    <p className="text-xs font-semibold text-gray-950">Alternatives</p>
+                    <p className="text-xs font-semibold text-gray-950">{text.alternatives}</p>
                     <div className="mt-2 space-y-2">
-                      {message.alternatives.map((alternative) => (
+                      {message.alternatives.map((alternative) => {
+                        const translatedProduct = getProductText(alternative.product, locale);
+                        return (
                         <div key={alternative.product._id} className="text-xs text-gray-700">
                           <Link href={`/product/${alternative.product._id}`} className="font-medium text-gray-950 hover:underline">
-                            {alternative.product.name}
+                            {translatedProduct.name}
                           </Link>
                           <span> - {alternative.reason}</span>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -319,14 +348,14 @@ const AIAssistant = () => {
             ))}
             {loading && (
               <div className="inline-block rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">
-                Thinking...
+                {text.thinking}
               </div>
             )}
           </div>
 
           {messages.length === 1 && (
             <div className="flex gap-2 overflow-x-auto border-t px-4 py-3">
-              {starterMessages.map((starter) => (
+              {starterMessages[locale].map((starter) => (
                 <button
                   key={starter}
                   onClick={() => sendMessage(starter)}
@@ -344,7 +373,7 @@ const AIAssistant = () => {
               onChange={(event) => setInput(event.target.value)}
               onFocus={() => !loading && setAvatarState("listening")}
               onBlur={() => !loading && !speech.isListening && setAvatarState("idle")}
-              placeholder="Ask for product advice..."
+              placeholder={text.assistantPlaceholder}
               className="h-10 min-w-0 flex-1 rounded-md border px-3 text-sm outline-none focus:ring-2 focus:ring-gray-300"
             />
             <Button
@@ -352,12 +381,12 @@ const AIAssistant = () => {
               variant="outline"
               size="icon"
               onClick={toggleVoiceInput}
-              aria-label={speech.isListening ? "Stop voice input" : "Start voice input"}
-              title={speech.error || (speech.supported ? "Speak in English" : "Speech recognition requires Chrome or Edge")}
+              aria-label={speech.isListening ? (vi ? "Dừng nhập bằng giọng nói" : "Stop voice input") : (vi ? "Bắt đầu nhập bằng giọng nói" : "Start voice input")}
+              title={speech.error || (speech.supported ? (vi ? "Nói bằng tiếng Việt" : "Speak in English") : (vi ? "Nhận dạng giọng nói cần Chrome hoặc Edge" : "Speech recognition requires Chrome or Edge"))}
             >
               {speech.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
-            <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label="Send message">
+            <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label={vi ? "Gửi tin nhắn" : "Send message"}>
               <Send className="h-4 w-4" />
             </Button>
           </form>
@@ -375,11 +404,11 @@ const AIAssistant = () => {
           setAvatarState(open ? "idle" : "listening");
         }}
         className="flex h-14 items-center gap-2 rounded-full border border-[#e4bd85] bg-white pr-5 shadow-[0_8px_24px_rgba(120,72,20,0.16)]"
-        aria-label="Open AI assistant"
+        aria-label={vi ? "Mở trợ lý AI" : "Open AI assistant"}
       >
         <span className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-[#e4bd85] bg-[#fff4e6]"><Image src="/images/ai-assistant-portrait.png" alt="" fill className="object-cover" sizes="56px" /></span>
         <span className="h-2 w-2 rounded-full bg-emerald-500" />
-        <span className="text-sm font-semibold text-[#111827]">Ask AI</span>
+        <span className="text-sm font-semibold text-[#111827]">{text.askAi}</span>
       </button>
     </div>
   );

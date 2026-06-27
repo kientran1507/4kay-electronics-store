@@ -2,12 +2,9 @@ const mongoose = require("mongoose");
 const Product = require("../models/productModel");
 
 const writableFields = [
-  "name", "description", "price", "currency", "originalPrice",
-  "originalCurrency", "stock", "image", "images", "category", "brand",
-  "shortDescription", "longDescription", "specs", "useCases", "strengths",
-  "weaknesses", "bestFor", "notBestFor", "reviewSummary", "tags", "rating",
-  "reviewCount", "source", "sourceProductId", "sourceUrl", "availability",
-  "warranty", "releaseYear",
+  "name", "description", "descriptionVi", "price", "stock", "image",
+  "images", "category", "brand", "specs", "useCases", "highlights",
+  "tradeoffs", "rating", "reviewCount", "warranty",
 ];
 
 const pickProductFields = (body = {}) =>
@@ -114,8 +111,12 @@ exports.findProducts = async (req, res) => {
     $or: [
       { name: { $regex: value, $options: "i" } },
       { description: { $regex: value, $options: "i" } },
+      { descriptionVi: { $regex: value, $options: "i" } },
       { category: { $regex: value, $options: "i" } },
       { brand: { $regex: value, $options: "i" } },
+      { useCases: { $regex: value, $options: "i" } },
+      { "highlights.en": { $regex: value, $options: "i" } },
+      { "highlights.vi": { $regex: value, $options: "i" } },
     ],
   };
 

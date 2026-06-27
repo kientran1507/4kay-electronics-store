@@ -10,20 +10,24 @@ const textOf = (product) =>
     product.brand,
     product.category,
     product.description,
-    product.shortDescription,
-    product.longDescription,
+    product.descriptionVi,
     ...(product.useCases || []),
-    ...(product.strengths || []),
-    ...(product.weaknesses || []),
-    ...(product.bestFor || []),
-    ...(product.notBestFor || []),
-    ...(product.tags || []),
+    ...(product.highlights?.en || []),
+    ...(product.highlights?.vi || []),
+    ...(product.tradeoffs?.en || []),
+    ...(product.tradeoffs?.vi || []),
     ...Object.values(product.specs || {}),
   ].join(" "));
 
 const categoryMatches = (product, category) => {
   if (!category) return true;
-  const text = normalize(`${product.name} ${product.category}`);
+  if (product.category) {
+    if (category === "accessory") {
+      return ["accessory", "audio", "keyboard", "mouse", "monitor", "storage", "gaming"].includes(product.category);
+    }
+    return product.category === category;
+  }
+  const text = normalize(`${product.name} ${product.category} ${product.description} ${product.descriptionVi || ""}`);
   if (category === "phone") return /phone|iphone|smartphone|android|dien thoai/.test(text);
   if (category === "laptop") return /laptop|macbook|notebook/.test(text);
   if (category === "tablet") return /tablet|ipad|may tinh bang/.test(text);
@@ -46,21 +50,23 @@ const useCaseTerms = {
 
 const scoreProduct = (product, needs) => {
   const text = textOf(product);
+  const budgetValue = Number(needs.budget);
+  const budget = Number.isFinite(budgetValue) && budgetValue > 0 ? budgetValue : null;
   const categoryMatch = categoryMatches(product, needs.category);
   const brandMatch = (needs.preferredBrands || []).some((brand) => text.includes(normalize(brand)));
   const dislikedBrand = (needs.dislikedBrands || []).some((brand) => text.includes(normalize(brand)));
   const useMatches = [...(needs.useCases || []), ...(needs.importantFactors || [])].filter((item) =>
-    (useCaseTerms[item] || [item]).some((term) => text.includes(normalize(term))),
+    (product.useCases || []).includes(item) || (useCaseTerms[item] || [item]).some((term) => text.includes(normalize(term))),
   );
   const specMatches = Object.entries(needs.minSpecs || needs.specs || {}).filter(([, value]) =>
     value ? text.includes(normalize(value)) : false,
   );
 
-  const budgetScore = !needs.budget
+  const budgetScore = !budget
     ? 12
-    : product.price <= needs.budget
+    : product.price <= budget
       ? 20
-      : Math.max(0, 20 - Math.round(((product.price - needs.budget) / needs.budget) * 40));
+      : Math.max(0, 20 - Math.round(((product.price - budget) / budget) * 40));
 
   const scoreDetails = {
     categoryScore: categoryMatch ? (needs.category ? 20 : 8) : -25,
@@ -70,7 +76,7 @@ const scoreProduct = (product, needs) => {
     brandScore: brandMatch ? 10 : dislikedBrand ? -15 : 0,
     ratingScore: product.rating ? Math.min(10, Math.round(product.rating * 2)) : 0,
     availabilityScore: product.stock > 0 ? 5 : -10,
-    valueScore: needs.budget && product.price <= needs.budget * 0.85 ? 5 : 0,
+    valueScore: budget && product.price <= budget * 0.85 ? 5 : 0,
   };
   scoreDetails.total = Object.values(scoreDetails).reduce((sum, value) => sum + value, 0);
 
@@ -86,29 +92,19 @@ const productPayload = (product) => ({
   name: product.name,
   brand: product.brand || "",
   description: product.description,
-  shortDescription: product.shortDescription || "",
-  longDescription: product.longDescription || "",
+  descriptionVi: product.descriptionVi || "",
   price: product.price,
-  currency: product.currency || "VND",
   stock: product.stock,
   image: product.image,
   images: product.images || [],
   category: product.category,
   specs: product.specs || {},
   useCases: product.useCases || [],
-  strengths: product.strengths || [],
-  weaknesses: product.weaknesses || [],
-  bestFor: product.bestFor || [],
-  notBestFor: product.notBestFor || [],
-  tags: product.tags || [],
+  highlights: product.highlights || { en: [], vi: [] },
+  tradeoffs: product.tradeoffs || { en: [], vi: [] },
   rating: product.rating || null,
   reviewCount: product.reviewCount || 0,
-  reviewSummary: product.reviewSummary || "",
-  source: product.source || "local",
-  sourceUrl: product.sourceUrl || "",
-  availability: product.availability || "",
   warranty: product.warranty || "",
-  releaseYear: product.releaseYear || null,
 });
 
 const makeRecommendation = (product, needs, ranking) => {
@@ -123,7 +119,7 @@ const makeRecommendation = (product, needs, ranking) => {
   ].filter(Boolean);
 
   const tradeoff =
-    product.weaknesses?.[0] ||
+    product.tradeoffs?.en?.[0] ||
     (needs.budget && product.price > needs.budget
       ? `It is above your budget by about ${formatCurrency(product.price - needs.budget)}.`
       : ranking.scoreDetails.useCaseScore < 10 && needs.useCases?.length
@@ -138,8 +134,8 @@ const makeRecommendation = (product, needs, ranking) => {
       ? `This is a sensible pick because ${reasonBits.slice(0, 3).join(", ")}.`
       : "This is one of the closer matches in the current catalog, but the product data is still missing richer specs.",
     tradeoff,
-    bestFor: product.bestFor?.[0] || (useText ? `Best for ${useText}.` : "Best for a balanced buyer."),
-    notBestFor: product.notBestFor?.[0] || "Not best if your top priority is different from the needs you described.",
+    bestFor: useText ? `Best for ${useText}.` : "Best for a balanced buyer.",
+    notBestFor: product.tradeoffs?.en?.[0] || "Not best if your top priority is different from the needs you described.",
     betterThan: "",
     comparisonNote: "",
     nextAction: "View details, compare it with another option, or add it to cart.",

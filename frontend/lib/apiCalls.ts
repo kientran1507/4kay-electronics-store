@@ -8,6 +8,7 @@ import {
   KioskResponse,
   LoginData,
   PaymentSession,
+  PricingQuote,
   RegisterData
 } from "@/types";
 
@@ -206,6 +207,11 @@ export const createProtectedApi = (token: string) => {
 
     // Order operations (for customers only)
     orders: {
+      quote: async (orderData: { shippingAddress?: string; voucherCode?: string }): Promise<{ message: string; pricing: PricingQuote }> => {
+        const res = await api.post('/orders/quote', orderData);
+        return res.data;
+      },
+
       create: async (orderData: any) => {
         const res = await api.post('/orders/createOrder', orderData);
         return res.data;

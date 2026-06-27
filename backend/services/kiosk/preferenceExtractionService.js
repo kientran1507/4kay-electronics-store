@@ -2,9 +2,10 @@ const { extractPreferences, toPublicNeeds } = require("../preferenceExtractor");
 
 const extractKioskNeeds = (message, previousNeeds = {}) => {
   const extracted = extractPreferences(message);
+  const budgetValue = Number(extracted.budget || previousNeeds.budget);
   const merged = {
     category: extracted.category || previousNeeds.category || "",
-    budget: extracted.budget || previousNeeds.budget || null,
+    budget: Number.isFinite(budgetValue) && budgetValue > 0 ? budgetValue : null,
     useCases: [...new Set([...(previousNeeds.useCases || []), ...(extracted.useCases || [])])],
     preferredBrands: [...new Set([...(previousNeeds.preferredBrands || []), ...(extracted.preferredBrands || [])])],
     dislikedBrands: previousNeeds.dislikedBrands || [],

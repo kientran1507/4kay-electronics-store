@@ -24,6 +24,32 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   items: [orderItemSchema], // Danh sách sản phẩm trong đơn hàng
+  subtotal: {
+    type: Number,
+    default: 0,
+  },
+  discountAmount: {
+    type: Number,
+    default: 0,
+  },
+  voucherCode: {
+    type: String,
+    default: "",
+    uppercase: true,
+    trim: true,
+  },
+  shippingFee: {
+    type: Number,
+    default: 0,
+  },
+  shippingZone: {
+    type: String,
+    default: "national",
+  },
+  shippingLabel: {
+    type: String,
+    default: "",
+  },
   totalPrice: {
     type: Number,
     required: true,

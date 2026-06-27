@@ -19,12 +19,11 @@ Supported enrichment fields include:
 
 - `specs`
 - `useCases`
-- `strengths`
-- `weaknesses`
-- `bestFor`
-- `notBestFor`
-- `reviewSummary`
-- `tags`
+- `descriptionVi`
+- `highlightsEn`
+- `highlightsVi`
+- `tradeoffsEn`
+- `tradeoffsVi`
 - `rating`
 - `reviewCount`
 
@@ -53,7 +52,8 @@ Or pass keywords:
 npm run import:bestbuy -- laptop,phone,monitor
 ```
 
-The importer upserts by `source = bestbuy` and `sourceProductId = sku`.
+The importer updates an existing product with the same exact name; otherwise it
+creates a new compact product document.
 
 ## Amazon
 

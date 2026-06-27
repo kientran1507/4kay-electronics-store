@@ -1,5 +1,6 @@
 import Footer from "@/components/footer";
 import StorefrontHome from "@/components/home/StorefrontHome";
+import HomeLoadError from "@/components/storefront/HomeLoadError";
 import { publicApi } from "@/lib/apiCalls";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ const HomePage = async () => {
     );
   } catch (error) {
     console.error("Failed to fetch products:", error);
-    return <div>Error loading products</div>;
+    return <><HomeLoadError /><Footer /></>;
   }
 };
 

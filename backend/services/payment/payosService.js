@@ -1,5 +1,4 @@
 const { PayOS } = require("@payos/node");
-const QRCode = require("qrcode");
 
 const hasPayosConfig = () =>
   Boolean(
@@ -16,29 +15,9 @@ const getClient = () => new PayOS({
 
 const createOrderCode = () => (Date.now() * 100) + Math.floor(Math.random() * 100);
 
-const toQrImage = async (value) => {
-  if (!value) return "";
-  if (/^(data:image|https?:\/\/)/i.test(value)) return value;
-  return QRCode.toDataURL(value, {
-    errorCorrectionLevel: "M",
-    margin: 1,
-    width: 320,
-  });
-};
-
 const createPayosPayment = async ({ orderId, amount }) => {
   if (!hasPayosConfig()) {
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const fallbackQr = process.env.MANUAL_BANK_QR || `${frontendUrl}/images/qr.jpeg`;
-    return {
-      orderId,
-      paymentUrl: "",
-      qrCode: fallbackQr,
-      amount,
-      status: "pending",
-      provider: "manual_bank_transfer",
-      message: "Scan the store bank QR and include the order id in the transfer note.",
-    };
+    throw new Error("payOS credentials are not configured.");
   }
 
   const orderCode = createOrderCode();
@@ -56,7 +35,7 @@ const createPayosPayment = async ({ orderId, amount }) => {
     orderCode,
     paymentLinkId: paymentLink.paymentLinkId,
     paymentUrl: paymentLink.checkoutUrl,
-    qrCode: await toQrImage(paymentLink.qrCode),
+    qrCode: "",
     amount: paymentLink.amount,
     status: String(paymentLink.status || "PENDING").toLowerCase(),
     provider: "payos",
