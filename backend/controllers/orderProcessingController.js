@@ -1,4 +1,5 @@
 const Order = require("../models/orderModel.js");
+const { releaseOrderInventory } = require("../services/inventoryService.js");
 
 //Cập nhật trạng thái đơn hàng
 exports.updateOrderStatus = async (req, res) => {
@@ -16,6 +17,21 @@ exports.updateOrderStatus = async (req, res) => {
       ].includes(status)
     ) {
       return res.status(400).json({ message: "Trạng thái không hợp lệ." });
+    }
+
+    const existingOrder = await Order.findById(orderId);
+    if (!existingOrder) {
+      return res.status(404).json({ message: "Đơn hàng không tồn tại." });
+    }
+
+    if (existingOrder.status === "Đã hủy" && status !== "Đã hủy") {
+      return res.status(409).json({
+        message: "Không thể kích hoạt lại đơn hàng đã hủy vì tồn kho đã được hoàn trả.",
+      });
+    }
+
+    if (status === "Đã hủy") {
+      await releaseOrderInventory(existingOrder);
     }
 
     // Cập nhật trạng thái đơn hàng

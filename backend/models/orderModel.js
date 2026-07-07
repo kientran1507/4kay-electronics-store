@@ -93,6 +93,10 @@ const orderSchema = new mongoose.Schema({
   paymentQrCode: {
     type: String,
   },
+  inventoryReleasedAt: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -2,6 +2,11 @@ const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
 const refundOrder = require("./orderProcessingController.js").refundOrder;
 const { buildCartPricing } = require("../services/pricingService");
+const {
+  releaseOrderInventory,
+  reserveInventory,
+  restoreInventory,
+} = require("../services/inventoryService");
 
 const WAITING_PAYMENT_STATUS = "Chờ thanh toán";
 const PROCESSING_STATUS = "Chờ xử lý";
@@ -48,6 +53,9 @@ exports.quoteOrder = async (req, res) => {
 exports.createOrder = async (req, res) => {
   const userId = req.user.id;
   const { shippingAddress, paymentMethod, voucherCode } = req.body;
+  let reservedItems = [];
+  let orderSaved = false;
+  let newOrder;
 
   try {
     const cart = await Cart.findOne({ userId });
@@ -71,8 +79,9 @@ exports.createOrder = async (req, res) => {
       price: item.price,
     }));
     const cashPayment = isCashPayment(paymentMethod);
+    reservedItems = await reserveInventory(orderItems);
 
-    const newOrder = new Order({
+    newOrder = new Order({
       userId,
       items: orderItems,
       subtotal: pricing.subtotal,
@@ -90,6 +99,7 @@ exports.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
+    orderSaved = true;
     if (pricing.voucher) {
       pricing.voucher.usedCount += 1;
       await pricing.voucher.save();
@@ -104,6 +114,23 @@ exports.createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+
+    if (reservedItems.length && !orderSaved) {
+      try {
+        await restoreInventory(reservedItems);
+      } catch (restoreError) {
+        console.error("Could not restore inventory after order failure:", restoreError);
+      }
+    }
+
+    if (orderSaved) {
+      return res.status(201).json({
+        message: "Order was created, but cart or voucher cleanup needs attention.",
+        order: newOrder,
+        cart: { items: [], totalPrice: 0 },
+      });
+    }
+
     return res.status(error.statusCode || 500).json({
       message: error.message || "System error while creating order.",
     });
@@ -203,9 +230,11 @@ exports.cancelOrder = async (req, res) => {
       await refundOrder(orderId);
     }
 
-    order.status = CANCELLED_STATUS;
-    order.updatedAt = new Date();
-    await order.save();
+    await releaseOrderInventory(order);
+    await Order.updateOne(
+      { _id: order._id },
+      { $set: { status: CANCELLED_STATUS, updatedAt: new Date() } },
+    );
 
     return res.status(200).json({
       message: "Order cancelled.",
