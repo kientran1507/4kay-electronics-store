@@ -3,11 +3,11 @@ const Cart = require("../models/cartModel");
 const refundOrder = require("./orderProcessingController.js").refundOrder;
 const { buildCartPricing } = require("../services/pricingService");
 
-const WAITING_PAYMENT_STATUS = "Chá» thanh toÃ¡n";
-const PROCESSING_STATUS = "Chá» xá»­ lÃ½";
-const SHIPPING_STATUS = "Äang giao";
-const COMPLETED_STATUS = "HoÃ n thÃ nh";
-const CANCELLED_STATUS = "ÄÃ£ há»§y";
+const WAITING_PAYMENT_STATUS = "Chờ thanh toán";
+const PROCESSING_STATUS = "Chờ xử lý";
+const SHIPPING_STATUS = "Đang giao";
+const COMPLETED_STATUS = "Hoàn thành";
+const CANCELLED_STATUS = "Đã hủy";
 
 function isCashPayment(paymentMethod = "") {
   const value = String(paymentMethod).toLowerCase();

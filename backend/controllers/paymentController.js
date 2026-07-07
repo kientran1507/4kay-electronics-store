@@ -6,6 +6,8 @@ const {
   verifyPayosWebhook,
 } = require("../services/payment/payosService");
 
+const PROCESSING_STATUS = "Chờ xử lý";
+
 const findOwnedOrder = (orderId, userId) => {
   if (!mongoose.Types.ObjectId.isValid(orderId)) return null;
   return Order.findOne({ _id: orderId, userId });
@@ -79,7 +81,7 @@ exports.payosWebhook = async (req, res) => {
 
     order.paymentStatus = webhookData.code === "00" ? "paid" : "failed";
     if (order.paymentStatus === "paid") {
-      order.status = "Chá» xá»­ lÃ½";
+      order.status = PROCESSING_STATUS;
     }
     order.updatedAt = new Date();
     await order.save();
@@ -104,7 +106,7 @@ exports.getStatus = async (req, res) => {
         const nextStatus = mapProviderStatus(providerPayment?.status);
         if (nextStatus !== order.paymentStatus) {
           order.paymentStatus = nextStatus;
-          if (nextStatus === "paid") order.status = "Chá» xá»­ lÃ½";
+          if (nextStatus === "paid") order.status = PROCESSING_STATUS;
           order.updatedAt = new Date();
           await order.save();
         }
@@ -122,5 +124,6 @@ exports.getStatus = async (req, res) => {
 
 exports._test = {
   mapProviderStatus,
+  PROCESSING_STATUS,
   serializePayment,
 };

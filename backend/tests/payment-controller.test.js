@@ -11,6 +11,10 @@ test("payOS provider statuses map to local payment statuses", () => {
   assert.equal(_test.mapProviderStatus("PENDING"), "pending");
 });
 
+test("paid payOS orders use a valid localized processing status", () => {
+  assert.equal(_test.PROCESSING_STATUS, "Chờ xử lý");
+});
+
 test("payment serialization exposes only checkout metadata", () => {
   const order = {
     _id: "order-id",
